@@ -1,57 +1,105 @@
-# Welcome to your Expo app 👋
+# MealMabel
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+MealMabel is a UK-first weekly food and shopping assistant. Tell Mabel who you are feeding, the budget, and your preferences, and she plans the week down to an aggregated shopping list and Tesco / Asda / Sainsbury’s comparison.
 
-## Get started
+This repo is the React Native mobile app. The first build uses mocked services so you can validate the product experience without live supermarket APIs, LLMs, or production auth.
 
-1. Install dependencies
+## Requirements
 
-   ```bash
-   npm install
-   ```
+- Node.js 20 or later
+- npm
+- [Expo Go](https://expo.dev/go) on a physical iPhone or Android phone
 
-2. Start the app
+The App Store version of Expo Go currently supports **Expo SDK 54**. This project is aligned to that SDK so you can develop without Xcode or the iOS Simulator.
 
-   ```bash
-   npx expo start
-   ```
+When custom native modules are required, use EAS cloud development builds rather than a local Xcode install.
 
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Setup
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Run on a physical phone
 
-### Other setup steps
+1. Install Expo Go from the App Store or Google Play.
+2. Connect the phone and computer to the same Wi-Fi network.
+3. Start the app:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+npm start
+```
 
-## Learn more
+4. Scan the QR code with the iPhone Camera app, or from Expo Go on Android.
+5. If the phone cannot reach Metro, use a tunnel:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npx expo start -c --tunnel
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Force-close and reopen Expo Go after a SDK or dependency change, then scan a fresh QR code.
 
-## Join the community
+## Scripts
 
-Join our community of developers creating universal apps.
+| Command | What it does |
+| --- | --- |
+| `npm start` | Start Expo / Metro |
+| `npm test` | Run Jest tests |
+| `npm run typecheck` | Strict TypeScript check |
+| `npm run lint` | Expo ESLint and Oxlint |
+| `npm run format` | Format the repo with Oxfmt |
+| `npm run format:check` | Check formatting without writing files |
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
-# MealMabel
+Copy for test and quality checks:
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run format:check
+```
+
+Run everything together:
+
+```bash
+npm test && npm run typecheck && npm run lint
+```
+
+## Product slice
+
+The mocked vertical slice covers:
+
+1. Onboarding
+2. Household people, including typical vs custom nutrition targets
+3. Plan my week
+4. Branded generation
+5. Weekly meal plan and recipe detail
+6. Meal swap
+7. Aggregated shopping list
+8. Supermarket comparison and retailer baskets
+
+Checked shopping items, onboarding, household members, and the current plan persist locally.
+
+## Architecture
+
+UI screens talk to service interfaces, not supermarket or AI providers. Initial implementations are mocks over fixture data and pack-aware basket maths.
+
+```
+src/
+  app/           Expo Router screens
+  copy/          All user-facing copy
+  components/    Shared UI
+  domain/        Models and optimisation
+  services/      Interfaces and mocks
+  fixtures/      Demo recipes, plan, catalogue
+  storage/       Local persistence
+  theme/         Design tokens
+```
+
+Replacing a mock service later should not require rewriting screens. Product copy lives in `src/copy/index.ts` so screens stay free of hardcoded user-facing strings. Secrets must not live in the client; a MealMabel backend will sit in front of AI and grocery providers.
+
+## Notes
+
+- Currency is £ GBP. Units are grams, kilograms, millilitres and litres.
+- Do not treat the mock planner as allergy-safe. Hard dietary restrictions must eventually be checked against structured product data.
+- The marketing site at mealmabel.co.uk is a separate project.
