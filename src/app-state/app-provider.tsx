@@ -20,16 +20,20 @@ import {
   syncHouseholdMembers,
 } from '@/domain';
 import type {
-  Household,
+  DietaryRestriction,
   DietType,
+  Household,
   MealSwapRequest,
+  NutritionGoal,
   PlanRequest,
   RetailerComparison,
   RetailerId,
   ShoppingList,
+  UserPreferences,
   UserProfile,
   WeeklyPlan,
 } from '@/domain';
+import { analytics } from '@/analytics';
 import {
   createMockPlanModification,
   MockGroceryCatalogueService,
@@ -84,6 +88,13 @@ interface AppContextValue {
   setOnboardingDraft: (draft: OnboardingDraft) => void;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
   saveHouseholdFromDraft: () => Promise<void>;
+  updatePreferences: (updates: {
+    dietType: DietType;
+    nutritionGoals: NutritionGoal[];
+    dietaryRestrictions: DietaryRestriction[];
+    excludedIngredients: string[];
+    preferredRetailers: RetailerId[];
+  }) => Promise<void>;
   generatePlan: (request: PlanRequest) => Promise<WeeklyPlan>;
   swapMeal: (request: MealSwapRequest) => Promise<void>;
   modifyPlan: (mealId: string, instruction: string) => Promise<MockPlanModificationDraft>;
@@ -170,6 +181,43 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
     });
   }, [householdFromDraft, persist, state]);
 
+  const updatePreferences = useCallback(
+    async (updates: {
+      dietType: DietType;
+      nutritionGoals: NutritionGoal[];
+      dietaryRestrictions: DietaryRestriction[];
+      excludedIngredients: string[];
+      preferredRetailers: RetailerId[];
+    }) => {
+      if (!state.profile) {
+        return;
+      }
+      const members = state.profile.household?.members ?? onboardingDraft.members;
+      const dietType = stricterDiet(updates.dietType, requiredHouseholdDiet(members));
+      const nextPreferences: UserPreferences = {
+        ...state.profile.preferences,
+        dietType,
+        dietaryPreferences: dietType === 'anything' ? ['none'] : [dietType],
+        nutritionGoals: updates.nutritionGoals,
+        dietaryRestrictions: updates.dietaryRestrictions,
+        excludedIngredients: updates.excludedIngredients,
+        preferredRetailers: updates.preferredRetailers,
+      };
+      await persist({
+        ...state,
+        profile: {
+          ...state.profile,
+          updatedAt: new Date().toISOString(),
+          preferences: {
+            ...nextPreferences,
+            allergens: mergePreferenceAllergens(nextPreferences, members),
+          },
+        },
+      });
+    },
+    [onboardingDraft.members, persist, state],
+  );
+
   const generatePlan = useCallback(
     async (request: PlanRequest) => {
       const plan = await planner.generatePlan(request);
@@ -187,6 +235,12 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
         checkedShoppingItemIds: [],
       });
       await queryClient.invalidateQueries({ queryKey: ['plan-data'] });
+      void analytics.track('plan_generated', {
+        durationDays: request.durationDays ?? 7,
+        mealTypeCount: request.mealsPerDay.length,
+        retailerCount: request.preferences.preferredRetailers.length,
+        weeklyBudget: request.preferences.maximumWeeklyBudget,
+      });
       return plan;
     },
     [persist, queryClient, state],
@@ -202,6 +256,10 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
         checkedShoppingItemIds: [],
       });
       await queryClient.invalidateQueries({ queryKey: ['plan-data'] });
+      void analytics.track('meal_swapped', {
+        mealId: request.mealId,
+        reason: request.reason ?? null,
+      });
     },
     [persist, queryClient, state],
   );
@@ -226,6 +284,10 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
         checkedShoppingItemIds: [],
       });
       await queryClient.invalidateQueries({ queryKey: ['plan-data'] });
+      void analytics.track('plan_modified', {
+        mealId,
+        modificationType: draft.request.modifications[0]?.type ?? 'unknown',
+      });
       return draft;
     },
     [persist, queryClient, state],
@@ -278,6 +340,7 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       setOnboardingDraft,
       completeOnboarding,
       saveHouseholdFromDraft,
+      updatePreferences,
       generatePlan,
       swapMeal,
       modifyPlan,
@@ -297,6 +360,7 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       state,
       swapMeal,
       toggleShoppingItem,
+      updatePreferences,
     ],
   );
 

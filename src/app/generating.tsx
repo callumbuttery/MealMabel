@@ -2,8 +2,16 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
-import { useMealMabelApp } from '@/app-state/app-provider';
-import { AppText, Blob, LoadingMabel, MabelInsight, PrimaryButton, Screen } from '@/components';
+import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
+import {
+  AppText,
+  Blob,
+  LoadingMabel,
+  MabelInsight,
+  PrimaryButton,
+  Screen,
+  SecondaryButton,
+} from '@/components';
 import {
   aggregateHouseholdTargets,
   createHousehold,
@@ -16,13 +24,18 @@ import {
   type PlanRequest,
   type RetailerId,
 } from '@/domain';
-import { copy } from '@/copy';
+import { copy, formatGbp } from '@/copy';
 import { NoSafePlanError } from '@/services';
 import { colors, spacing } from '@/theme';
 
 interface GenerationFailure {
   message: string;
   safeRefusal: boolean;
+}
+
+interface BudgetNotice {
+  total: string;
+  budget: string;
 }
 
 export default function GeneratingScreen() {
@@ -35,8 +48,12 @@ export default function GeneratingScreen() {
     diet?: string;
   }>();
   const { state, onboardingDraft, generatePlan } = useMealMabelApp();
+  const { comparison } = usePlanData();
   const [step, setStep] = useState(0);
   const [error, setError] = useState<GenerationFailure | null>(null);
+  const [awaitingBudgetCheck, setAwaitingBudgetCheck] = useState(false);
+  const [budgetNotice, setBudgetNotice] = useState<BudgetNotice | null>(null);
+  const requestBudget = useRef<number | null>(null);
   const started = useRef(false);
   const budgetParam = params.budget;
   const daysParam = params.days;
@@ -103,7 +120,8 @@ export default function GeneratingScreen() {
     };
     try {
       await generatePlan(request);
-      router.replace('/plan-summary');
+      requestBudget.current = maximumWeeklyBudget;
+      setAwaitingBudgetCheck(true);
     } catch (cause) {
       if (cause instanceof NoSafePlanError) {
         const mealTypes = cause.mealTypes
@@ -146,6 +164,24 @@ export default function GeneratingScreen() {
     return () => clearInterval(timer);
   }, [run]);
 
+  useEffect(() => {
+    if (!awaitingBudgetCheck || !comparison || requestBudget.current === null) {
+      return;
+    }
+    const best = comparison.baskets.find(
+      (basket) => basket.retailerId === comparison.cheapestRetailerId,
+    );
+    setAwaitingBudgetCheck(false);
+    if (best && best.subtotal > requestBudget.current) {
+      setBudgetNotice({
+        total: formatGbp(best.subtotal),
+        budget: formatGbp(requestBudget.current),
+      });
+    } else {
+      router.replace('/plan-summary');
+    }
+  }, [awaitingBudgetCheck, comparison]);
+
   return (
     <Screen scroll={false} contentStyle={styles.content}>
       <Blob size={180} color={colors.mustardSoft} top={-40} right={-50} />
@@ -162,6 +198,17 @@ export default function GeneratingScreen() {
             label={error.safeRefusal ? copy.generating.changeChoices : copy.common.tryAgain}
             onPress={error.safeRefusal ? () => router.back() : run}
           />
+        </>
+      ) : budgetNotice ? (
+        <>
+          <MabelInsight title={copy.generating.budgetFailureTitle}>
+            {copy.generating.budgetFailure(budgetNotice.total, budgetNotice.budget)}
+          </MabelInsight>
+          <PrimaryButton
+            label={copy.generating.continueAnyway}
+            onPress={() => router.replace('/plan-summary')}
+          />
+          <SecondaryButton label={copy.generating.changeChoices} onPress={() => router.back()} />
         </>
       ) : (
         <>

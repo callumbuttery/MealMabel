@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { analytics } from '@/analytics';
 import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
 import {
   AppText,
@@ -50,14 +51,14 @@ export default function ShopScreen() {
   const best = comparison.baskets.find(
     (basket) => basket.retailerId === comparison.cheapestRetailerId,
   );
-  const groups = shoppingList.items.reduce<Record<string, ShoppingListItem[]>>(
-    (result, item) => {
-      const category = copy.shop.categories[shoppingCategoryFor(item.ingredientId)];
-      result[category] = [...(result[category] ?? []), item];
-      return result;
-    },
-    {},
+  const bestPackByIngredient = new Map(
+    (best?.items ?? []).map((item) => [item.product.ingredientId, item] as const),
   );
+  const groups = shoppingList.items.reduce<Record<string, ShoppingListItem[]>>((result, item) => {
+    const category = copy.shop.categories[shoppingCategoryFor(item.ingredientId)];
+    result[category] = [...(result[category] ?? []), item];
+    return result;
+  }, {});
 
   return (
     <Screen>
@@ -78,21 +79,36 @@ export default function ShopScreen() {
         <ChoiceChip
           label={copy.shop.compareTab}
           selected={mode === 'compare'}
-          onPress={() => setMode('compare')}
+          onPress={() => {
+            setMode('compare');
+            void analytics.track('retailer_compared', {
+              source: 'shop-tab',
+              cheapestRetailerId: comparison.cheapestRetailerId,
+            });
+          }}
         />
       </View>
       {mode === 'list' ? (
         Object.entries(groups).map(([category, items]) => (
           <ShoppingCategory key={category} title={category} count={items.length}>
-            {items.map((item) => (
-              <ShoppingListItemRow
-                key={item.ingredientId}
-                name={item.name}
-                quantity={copy.shop.needed(item.quantity, item.unit)}
-                checked={state.checkedShoppingItemIds.includes(item.ingredientId)}
-                onToggle={() => toggleShoppingItem(item.ingredientId)}
-              />
-            ))}
+            {items.map((item) => {
+              const pack = bestPackByIngredient.get(item.ingredientId);
+              const quantity = pack
+                ? copy.shop.buy(
+                    pack.packCount,
+                    `${pack.product.packQuantity}${pack.product.packUnit}`,
+                  )
+                : copy.shop.needed(item.quantity, item.unit);
+              return (
+                <ShoppingListItemRow
+                  key={item.ingredientId}
+                  name={item.name}
+                  quantity={quantity}
+                  checked={state.checkedShoppingItemIds.includes(item.ingredientId)}
+                  onToggle={() => toggleShoppingItem(item.ingredientId)}
+                />
+              );
+            })}
           </ShoppingCategory>
         ))
       ) : (

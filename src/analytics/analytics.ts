@@ -16,10 +16,7 @@ export interface AnalyticsEvent {
 }
 
 export interface Analytics {
-  track(
-    name: AnalyticsEventName,
-    properties?: AnalyticsProperties,
-  ): Promise<void>;
+  track(name: AnalyticsEventName, properties?: AnalyticsProperties): Promise<void>;
 }
 
 export type AnalyticsLogSink = (event: AnalyticsEvent) => void;
@@ -61,3 +58,6 @@ export class InMemoryAnalytics implements Analytics {
     this.events.length = 0;
   }
 }
+
+/** Shared app-wide sink. Swap for a real provider client without touching call sites. */
+export const analytics: Analytics = new AnalyticsLogger();

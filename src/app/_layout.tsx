@@ -36,6 +36,7 @@ function Navigation() {
         <Stack.Screen name="generating" options={{ gestureEnabled: false }} />
         <Stack.Screen name="plan-summary" />
         <Stack.Screen name="edit-household" />
+        <Stack.Screen name="edit-preferences" />
         <Stack.Screen name="ask-mabel" />
         <Stack.Screen name="compare-shop" />
         <Stack.Screen name="meal/[id]" />

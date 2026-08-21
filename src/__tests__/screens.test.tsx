@@ -6,10 +6,13 @@ import WelcomeScreen from '@/app/(onboarding)';
 import HouseholdScreen from '@/app/(onboarding)/household';
 import HomeScreen from '@/app/(tabs)';
 import PlanScreen from '@/app/(tabs)/plan';
+import ProfileScreen from '@/app/(tabs)/profile';
 import ShopScreen from '@/app/(tabs)/shop';
 import AskMabelScreen from '@/app/ask-mabel';
 import CompareShopScreen from '@/app/compare-shop';
 import CreatePlanScreen from '@/app/create-plan';
+import EditPreferencesScreen from '@/app/edit-preferences';
+import GeneratingScreen from '@/app/generating';
 import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
 import {
   aggregateIngredientRequirements,
@@ -74,6 +77,7 @@ beforeEach(() => {
     setOnboardingDraft: () => undefined,
     completeOnboarding: async () => undefined,
     saveHouseholdFromDraft: async () => undefined,
+    updatePreferences: async () => undefined,
     generatePlan: async () => SEEDED_WEEKLY_PLAN,
     swapMeal: async () => undefined,
     modifyPlan: async () => ({ ok: false, reason: 'unsupported-request' }),
@@ -268,4 +272,80 @@ test('shop comparison identifies the best-value retailer', async () => {
   );
   expect(view.getByText(best?.retailerName ?? '')).toBeTruthy();
   expect(view.getAllByText(copy.shop.bestValueBadge).length).toBeGreaterThan(0);
+});
+
+test('shop list shows real pack sizes for the recommended retailer', async () => {
+  const requirements = aggregateIngredientRequirements(SEEDED_WEEKLY_PLAN);
+  const comparison = compareRetailers(requirements, SEEDED_GROCERY_CATALOGUE);
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true, currentPlan: SEEDED_WEEKLY_PLAN },
+  });
+  mockUsePlanData.mockReturnValue({
+    isLoading: false,
+    shoppingList: createShoppingList(SEEDED_WEEKLY_PLAN),
+    comparison,
+  });
+  const view = await render(<ShopScreen />);
+  const best = comparison.baskets.find(
+    (basket) => basket.retailerId === comparison.cheapestRetailerId,
+  )!;
+  const firstItem = best.items[0];
+  expect(
+    view.getAllByText(
+      copy.shop.buy(
+        firstItem.packCount,
+        `${firstItem.product.packQuantity}${firstItem.product.packUnit}`,
+      ),
+    ).length,
+  ).toBeGreaterThan(0);
+});
+
+test('profile offers to edit diet, goals and shops without a full reset', async () => {
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true, profile: PROFILE },
+  });
+  const view = await render(<ProfileScreen />);
+  await fireEvent.press(view.getAllByRole('button', { name: copy.common.edit })[1]);
+  expect(jest.mocked(router.push)).toHaveBeenLastCalledWith('/edit-preferences');
+});
+
+test('editing preferences saves diet, goals, restrictions, dislikes and shops', async () => {
+  const updatePreferences = jest.fn(async () => undefined);
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true, profile: PROFILE },
+    updatePreferences,
+  });
+
+  const view = await render(<EditPreferencesScreen />);
+  await fireEvent.press(view.getByText(copy.goals.high_protein));
+  await fireEvent.press(view.getByText(copy.restrictions.nut_free));
+  await fireEvent.press(view.getByRole('button', { name: copy.editPreferences.save }));
+
+  expect(updatePreferences).toHaveBeenCalledWith(
+    expect.objectContaining({
+      nutritionGoals: ['high_protein'],
+      dietaryRestrictions: ['nut_free'],
+      preferredRetailers: PROFILE.preferences.preferredRetailers,
+    }),
+  );
+  expect(jest.mocked(router.back)).toHaveBeenCalled();
+});
+
+test('generating admits when even the cheapest shop is over budget', async () => {
+  const requirements = aggregateIngredientRequirements(SEEDED_WEEKLY_PLAN);
+  const comparison = compareRetailers(requirements, SEEDED_GROCERY_CATALOGUE);
+  mockUseLocalSearchParams.mockReturnValue({ budget: '20' });
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true, profile: PROFILE },
+    generatePlan: async () => SEEDED_WEEKLY_PLAN,
+  });
+  mockUsePlanData.mockReturnValue({ isLoading: false, comparison });
+
+  const view = await render(<GeneratingScreen />);
+  expect(await view.findByText(copy.generating.budgetFailureTitle)).toBeTruthy();
+  expect(jest.mocked(router.replace)).not.toHaveBeenCalledWith('/plan-summary');
 });

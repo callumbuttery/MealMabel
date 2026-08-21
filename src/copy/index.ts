@@ -147,6 +147,14 @@ export const copy = {
     finish: 'Finish setup',
     defaultDislikes: 'Mushrooms',
   },
+  editPreferences: {
+    title: 'Diet, goals & shops',
+    intro:
+      'Update what matters to Mabel when she plans your week. Household diet and allergens come from the people you added.',
+    shops: 'Preferred supermarkets',
+    shopsSubtitle: 'Mabel compares baskets across the shops you pick.',
+    save: 'Save preferences',
+  },
   dietsHeading: 'Diet',
   diets: {
     anything: 'Anything',
@@ -266,6 +274,10 @@ export const copy = {
     safeFailure: (mealTypes: string) =>
       `I couldn't find a safe ${mealTypes} in the demo recipes. Go back and choose a different set of meals.`,
     changeChoices: 'Change plan choices',
+    budgetFailureTitle: "Here's my best offer",
+    budgetFailure: (total: string, budget: string) =>
+      `The cheapest full shop I could put together across your chosen supermarkets comes to ${total} — over your ${budget} budget. I kept your food rules and picked the best value plan I could.`,
+    continueAnyway: 'See my week anyway',
   },
   plan: {
     title: 'Your week',
@@ -401,6 +413,7 @@ export const copy = {
         ? `${items} items · ${checked} checked · ${total}`
         : `${items} items · ${checked} checked`,
     needed: (quantity: number, unit: string) => `Needed: ${quantity}${unit}`,
+    buy: (count: number, size: string) => `Buy ${count} × ${size} pack${count === 1 ? '' : 's'}`,
     bestValueBadge: 'Best value',
     bestValueTitle: (retailer: string) => `${retailer} is best value.`,
     bestValueBody: (retailer: string, saving: string) =>
@@ -435,10 +448,10 @@ export const copy = {
     defaultName: 'You',
     household: 'Household',
     dietGoals: 'Diet & goals',
+    restrictions: 'Restrictions',
     allergens: 'Allergens',
     dislikes: 'Dislikes',
     supermarkets: 'Supermarkets',
-    supermarketList: "Tesco · Asda · Sainsbury's",
     account: 'Account',
     accountBody: 'Demo account · Stored on this device',
     about: 'About',

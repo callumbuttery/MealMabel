@@ -51,7 +51,11 @@ export default function ProfileScreen() {
           );
         })}
       </Card>
-      <SectionHeader title={copy.profile.dietGoals} />
+      <SectionHeader
+        title={copy.profile.dietGoals}
+        actionLabel={copy.common.edit}
+        onAction={() => router.push('/edit-preferences')}
+      />
       <View style={styles.chips}>
         <ChoiceChip
           label={copy.diets[preferences?.dietType ?? 'anything']}
@@ -62,6 +66,21 @@ export default function ProfileScreen() {
           <ChoiceChip key={goal} label={copy.goals[goal]} selected onPress={() => undefined} />
         ))}
       </View>
+      {preferences?.dietaryRestrictions && preferences.dietaryRestrictions.length > 0 ? (
+        <>
+          <SectionHeader title={copy.profile.restrictions} />
+          <View style={styles.chips}>
+            {preferences.dietaryRestrictions.map((restriction) => (
+              <ChoiceChip
+                key={restriction}
+                label={copy.restrictions[restriction]}
+                selected
+                onPress={() => undefined}
+              />
+            ))}
+          </View>
+        </>
+      ) : null}
       <SectionHeader title={copy.profile.allergens} />
       <Card>
         <AppText>
@@ -74,8 +93,16 @@ export default function ProfileScreen() {
       <Card>
         <AppText>{preferences?.excludedIngredients.join(', ') || copy.common.noneAdded}</AppText>
       </Card>
-      <SectionHeader title={copy.profile.supermarkets} />
-      <AppText tone="muted">{copy.profile.supermarketList}</AppText>
+      <SectionHeader
+        title={copy.profile.supermarkets}
+        actionLabel={copy.common.edit}
+        onAction={() => router.push('/edit-preferences')}
+      />
+      <AppText tone="muted">
+        {(preferences?.preferredRetailers ?? [])
+          .map((retailer) => copy.retailers[retailer])
+          .join(' · ') || copy.common.noneAdded}
+      </AppText>
       <SectionHeader title={copy.profile.account} />
       <Card>
         <AppText>{copy.profile.accountBody}</AppText>

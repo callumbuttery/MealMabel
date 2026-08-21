@@ -15,6 +15,7 @@ import {
   SecondaryButton,
   SectionHeader,
 } from '@/components';
+import { analytics } from '@/analytics';
 import { copy, formatGbp } from '@/copy';
 import type { CompareShopResult } from '@/domain';
 import { MockCompareShopService, type CompareShopService } from '@/services';
@@ -43,6 +44,12 @@ export default function CompareShopScreen() {
         setError(copy.compareShop.noMatches);
       } else {
         setResult(next);
+        void analytics.track('retailer_compared', {
+          source: 'compare-shop',
+          matchedItems: next.matchedItems.length,
+          unmatchedItems: next.unmatchedLines.length,
+          cheapestRetailerId: next.comparison.cheapestRetailerId,
+        });
       }
     } catch {
       setError(copy.compareShop.noMatches);
