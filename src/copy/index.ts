@@ -81,8 +81,7 @@ export const copy = {
     customTargets: 'Custom targets',
     customShort: 'Custom',
     weight: 'Weight (optional)',
-    weightHelper:
-      'Kilograms. Used to size a typical diet if you do not set custom targets.',
+    weightHelper: 'Kilograms. Used to size a typical diet if you do not set custom targets.',
     calories: 'Calories / day',
     protein: 'Protein / day',
     fibre: 'Fibre / day',
@@ -154,8 +153,7 @@ export const copy = {
     bestShop: 'best shop',
     comparing: 'Comparing',
     weekSorted: 'Your week is sorted',
-    underBudget: (amount: string) =>
-      `I've planned the week and kept you ${amount} under budget.`,
+    underBudget: (amount: string) => `I've planned the week and kept you ${amount} under budget.`,
     checkingShop: "I'm checking the best-value shop for your plan.",
     viewPlan: 'View plan',
     viewList: 'View shopping list',
@@ -172,8 +170,7 @@ export const copy = {
     budgetHeadline: "What's the budget?",
     budgetLabel: 'Weekly food budget',
     budgetHelper: 'Between £20 and £300',
-    validation:
-      'Choose at least one meal and shop, with a £20–£300 budget.',
+    validation: 'Choose at least one meal and shop, with a £20–£300 budget.',
     meals: 'Which meals should Mabel plan?',
     days: 'How many days?',
     daysOption: (count: number) => `${count} days`,
@@ -207,8 +204,7 @@ export const copy = {
     ],
     body: 'Mabel is balancing your budget, nutrition and realistic supermarket pack sizes.',
     missingPreferences: 'Your preferences could not be loaded.',
-    failed:
-      "I couldn't finish that plan. Your preferences are safe — give me another go.",
+    failed: "I couldn't finish that plan. Your preferences are safe — give me another go.",
     retryTitle: "Let's try that again",
   },
   plan: {
@@ -216,12 +212,9 @@ export const copy = {
     emptyTitle: 'No plan yet',
     emptyBody: 'Tell Mabel what you need and your week will appear here.',
     emptyCta: 'Plan my week',
-    weekSummary: (meals: number, protein: number) =>
-      `${meals} meals · ~${protein}g protein/day`,
-    daySummary: (kcal: number, protein: number) =>
-      `${kcal} kcal · ${protein}g protein`,
-    mealCardCost: (kcal: number, protein: number) =>
-      `${kcal} kcal · ${protein}g protein`,
+    weekSummary: (meals: number, protein: number) => `${meals} meals · ~${protein}g protein/day`,
+    daySummary: (kcal: number, protein: number) => `${kcal} kcal · ${protein}g protein`,
+    mealCardCost: (kcal: number, protein: number) => `${kcal} kcal · ${protein}g protein`,
   },
   planSummary: {
     loading: 'Finishing your basket comparison…',
@@ -267,6 +260,40 @@ export const copy = {
       'Something different',
     ],
   },
+  askMabel: {
+    title: 'Ask Mabel',
+    subtitle: (day: string, mealType: string) => `${day} ${mealType}`,
+    missing: 'That meal is no longer in your current plan.',
+    insightTitle: 'What should change?',
+    insightBody:
+      'Ask for a quicker, higher-protein or lighter option. You can also change servings or remove the meal.',
+    suggestions: [
+      'Make it quicker',
+      'Add more protein',
+      'Lower the calories',
+      'Serve 4 people',
+      'Remove this meal',
+    ],
+    requestLabel: 'Your request',
+    requestPlaceholder: 'Make this quicker to cook',
+    updateCta: 'Update my plan',
+    unsupported:
+      'I can change the speed, protein, calories or servings, swap the recipe, or remove this meal.',
+    noSafeMatch:
+      "I couldn't find a suitable replacement without breaking your household preferences.",
+    noBetterMatch:
+      "I couldn't find a better match for that request, so I left your plan unchanged.",
+    failed: "I couldn't update the plan just now. Please try again.",
+    successTitle: 'Plan updated',
+    swapped: (before: string, after: string) =>
+      `I've replaced ${before} with ${after}. Your shopping list and shop comparison are up to date.`,
+    removed: (meal: string) =>
+      `I've removed ${meal}. Your shopping list and shop comparison are up to date.`,
+    servingsChanged: (meal: string, servings: number) =>
+      `I've changed ${meal} to ${servings} servings. Your shopping list and shop comparison are up to date.`,
+    seePlan: 'See updated plan',
+    anotherChange: 'Make another change',
+  },
   shop: {
     title: 'Shop',
     yourShop: 'Your shop',
@@ -300,10 +327,8 @@ export const copy = {
     loading: 'Opening your basket…',
     shopTitle: (name: string) => `Your ${name} shop`,
     incompleteTitle: 'Basket incomplete',
-    incompleteBody: (count: number) =>
-      `I couldn't find suitable matches for ${count} items.`,
-    packLine: (count: number, size: string, price: string) =>
-      `${count} × ${size} at ${price}`,
+    incompleteBody: (count: number) => `I couldn't find suitable matches for ${count} items.`,
+    packLine: (count: number, size: string, price: string) => `${count} × ${size} at ${price}`,
     chooseAnother: 'Choose another product',
     chooseThis: 'Choose this product',
     onlyMatchTitle: 'Best available match',

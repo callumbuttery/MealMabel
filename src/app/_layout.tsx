@@ -1,8 +1,4 @@
-import {
-  DMSans_400Regular,
-  DMSans_500Medium,
-  DMSans_700Bold,
-} from '@expo-google-fonts/dm-sans';
+import { DMSans_400Regular, DMSans_500Medium, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import {
   SpaceGrotesk_500Medium,
   SpaceGrotesk_600SemiBold,
@@ -40,6 +36,7 @@ function Navigation() {
         <Stack.Screen name="generating" options={{ gestureEnabled: false }} />
         <Stack.Screen name="plan-summary" />
         <Stack.Screen name="edit-household" />
+        <Stack.Screen name="ask-mabel" />
         <Stack.Screen name="meal/[id]" />
         <Stack.Screen name="retailer/[id]" />
       </Stack>

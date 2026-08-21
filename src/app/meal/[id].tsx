@@ -24,7 +24,7 @@ import { spacing } from '@/theme';
 export default function MealDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { state, swapMeal } = useMealMabelApp();
-  const [sheet, setSheet] = useState<'swap' | 'ask' | null>(null);
+  const [sheet, setSheet] = useState<'swap' | null>(null);
   const [message, setMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const match = state.currentPlan?.days
@@ -76,10 +76,7 @@ export default function MealDetailScreen() {
         />
       </View>
       <AppText tone="muted">{recipe.description}</AppText>
-      <SectionHeader
-        title={copy.meal.ingredients}
-        subtitle={copy.common.servings(meal.servings)}
-      />
+      <SectionHeader title={copy.meal.ingredients} subtitle={copy.common.servings(meal.servings)} />
       <Card>
         {recipe.ingredients.map((ingredient) => (
           <View key={ingredient.ingredientId} style={styles.row}>
@@ -98,7 +95,15 @@ export default function MealDetailScreen() {
         </View>
       ))}
       <PrimaryButton label={copy.meal.swap} onPress={() => setSheet('swap')} />
-      <SecondaryButton label={copy.meal.ask} onPress={() => setSheet('ask')} />
+      <SecondaryButton
+        label={copy.meal.ask}
+        onPress={() =>
+          router.push({
+            pathname: '/ask-mabel',
+            params: { mealId: meal.id },
+          })
+        }
+      />
 
       <BottomSheet
         visible={sheet === 'swap'}
@@ -123,26 +128,6 @@ export default function MealDetailScreen() {
         />
         <PrimaryButton
           label={copy.meal.swapCta}
-          loading={saving}
-          disabled={!message.trim()}
-          onPress={() => void submitSwap(message)}
-        />
-      </BottomSheet>
-      <BottomSheet
-        visible={sheet === 'ask'}
-        title={copy.meal.askTitle}
-        onClose={() => setSheet(null)}
-      >
-        <MabelInsight title={copy.meal.askInsightTitle}>{copy.meal.askInsightBody}</MabelInsight>
-        <AppTextInput
-          label={copy.meal.askLabel}
-          placeholder={copy.meal.askPlaceholder}
-          value={message}
-          onChangeText={setMessage}
-          multiline
-        />
-        <PrimaryButton
-          label={copy.meal.askCta}
           loading={saving}
           disabled={!message.trim()}
           onPress={() => void submitSwap(message)}

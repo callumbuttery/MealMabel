@@ -24,12 +24,13 @@ import type {
   UserProfile,
   WeeklyPlan,
 } from '@/domain';
-import { MockMealPlanningService, MockShoppingService } from '@/services';
 import {
-  AppStateRepository,
-  EMPTY_APP_STATE,
-  type PersistedAppState,
-} from '@/storage';
+  createMockPlanModification,
+  MockMealPlanningService,
+  MockShoppingService,
+  type MockPlanModificationDraft,
+} from '@/services';
+import { AppStateRepository, EMPTY_APP_STATE, type PersistedAppState } from '@/storage';
 
 const repository = new AppStateRepository();
 const planner = new MockMealPlanningService({ delayMs: 2800 });
@@ -67,6 +68,7 @@ interface AppContextValue {
   saveHouseholdFromDraft: () => Promise<void>;
   generatePlan: (request: PlanRequest) => Promise<WeeklyPlan>;
   swapMeal: (request: MealSwapRequest) => Promise<void>;
+  modifyPlan: (mealId: string, instruction: string) => Promise<MockPlanModificationDraft>;
   toggleShoppingItem: (id: string) => Promise<void>;
   clearApp: () => Promise<void>;
 }
@@ -98,7 +100,8 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const householdFromDraft = useCallback(
-    () => createHousehold(onboardingDraft.adults, onboardingDraft.children, onboardingDraft.members),
+    () =>
+      createHousehold(onboardingDraft.adults, onboardingDraft.children, onboardingDraft.members),
     [onboardingDraft],
   );
 
@@ -163,6 +166,31 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
     [persist, queryClient, state],
   );
 
+  const modifyPlan = useCallback(
+    async (mealId: string, instruction: string): Promise<MockPlanModificationDraft> => {
+      if (!state.currentPlan || !state.profile) {
+        return { ok: false, reason: 'meal-not-found' };
+      }
+      const draft = createMockPlanModification(
+        state.currentPlan,
+        mealId,
+        instruction,
+        state.profile.preferences,
+      );
+      if (!draft.ok) return draft;
+
+      const plan = await fastPlanner.modifyPlan(state.currentPlan, draft.request);
+      await persist({
+        ...state,
+        currentPlan: plan,
+        checkedShoppingItemIds: [],
+      });
+      await queryClient.invalidateQueries({ queryKey: ['plan-data'] });
+      return draft;
+    },
+    [persist, queryClient, state],
+  );
+
   const toggleShoppingItem = useCallback(
     async (id: string) => {
       const checked = state.checkedShoppingItemIds.includes(id);
@@ -191,6 +219,7 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       saveHouseholdFromDraft,
       generatePlan,
       swapMeal,
+      modifyPlan,
       toggleShoppingItem,
       clearApp,
     }),
@@ -198,6 +227,7 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       clearApp,
       completeOnboarding,
       generatePlan,
+      modifyPlan,
       onboardingDraft,
       ready,
       saveHouseholdFromDraft,
@@ -229,9 +259,7 @@ export function usePlanData(): {
     queryFn: async () => {
       if (!plan) throw new Error('No weekly plan is available.');
       const shoppingList = await shopping.createList(plan);
-      const comparison = await shopping.compareRetailers(
-        aggregateIngredientRequirements(plan),
-      );
+      const comparison = await shopping.compareRetailers(aggregateIngredientRequirements(plan));
       return { shoppingList, comparison };
     },
   });
@@ -241,4 +269,3 @@ export function usePlanData(): {
     isLoading: query.isLoading,
   };
 }
-
