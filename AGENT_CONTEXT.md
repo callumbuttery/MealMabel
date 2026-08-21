@@ -46,8 +46,8 @@ The first milestone is a **polished mocked vertical slice**. Do not block on liv
 ## Repo snapshot
 
 - Path: this repository, React Native / Expo Router app.
-- Branch: `main`. Work after the Expo template includes SDK 54 alignment, domain/mocks, MealMabel UI, onboarding-to-shop, then Ask Mabel, Compare My Shop, persisted create-plan inputs, product substitutions, constraint-safe generation, per-person diet/allergens, and (on the current working tree) editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, and analytics wiring.
-- Quality bar last known good: 45 Jest tests, `tsc --noEmit`, `expo lint && oxlint`, `oxfmt --check` (17 pre-existing unrelated files still fail format, unchanged from before this session).
+- Branch: `main`. Work after the Expo template includes SDK 54 alignment, domain/mocks, MealMabel UI, onboarding-to-shop, then Ask Mabel, Compare My Shop, persisted create-plan inputs, product substitutions, constraint-safe generation, per-person diet/allergens, editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, analytics wiring, and (on the current working tree) soft-goal recipe ranking in the mock planner.
+- Quality bar last known good: 51 Jest tests, `tsc --noEmit`, `expo lint && oxlint`, `oxfmt --check` (17 pre-existing unrelated files still fail format, unchanged from before this session).
 - Formatting: **Oxfmt**, not Prettier. Config: `.oxfmtrc.json`.
 - Do not commit `.env`, secrets, `dist-smoke/`, `.expo`, `ios/`, `android/`.
 
@@ -89,7 +89,9 @@ Rules:
 - Persisted app state is versioned (`@meal-mabel/app-state/v1`): onboarding, profile, current plan, checked shopping item IDs, optional `productSelections` (legacy v1 loads as `{}`).
 - TanStack Query is used for shopping list + retailer comparison derived from the current plan. Product substitutions are part of the query key.
 
-Mock planner behaviour (important): `MockMealPlanningService.generatePlan` validates the request, slices `SEEDED_WEEKLY_PLAN` by duration and meal types, scales servings to household size, then **replaces any seeded meal that fails hard constraints** with another safe recipe of that meal type. If a requested meal type has no safe recipe, it throws `NoSafePlanError`. The generating screen shows refusal UX and a “change your choices” path. Soft inputs (budget, goals, effort, cooking time) are stored on the request but are **not** used to pick cheaper/higher-protein/faster meals. Swap and Ask Mabel also keep diet/allergen/dislike constraints.
+Mock planner behaviour (important): `MockMealPlanningService.generatePlan` validates the request, slices `SEEDED_WEEKLY_PLAN` by duration and meal types, scales servings to household size, then **replaces any seeded meal that fails hard constraints** with another safe recipe of that meal type. If a requested meal type has no safe recipe, it throws `NoSafePlanError`. The generating screen shows refusal UX and a “change your choices” path. Swap and Ask Mabel also keep diet/allergen/dislike constraints.
+
+Soft optimisation: `src/domain/plan-optimizer.ts#rankRecipesForRequest` scores every hard-constraint-safe candidate for a meal slot against the household's `nutritionGoals` (`lower_calorie`, `high_protein`, `high_fibre`, `five_a_day` via a fruit/veg-ingredient heuristic, `cheapest_possible` via `estimateRecipeCostPerServing` in `basket-optimizer.ts`) and `cookingEffort === 'easy'`, using per-criterion min-max normalisation across that meal's candidates. **If no goals are set and effort isn't `easy`, every score is 0** and the stable sort leaves the seeded week's day-to-day variety untouched — `generatePlan` only swaps in `candidates[0]` (the single best match) once a soft preference is actually present. `maximumWeeklyBudget` and `cookingTimeLimitMinutes` are still stored but not yet used as planner inputs.
 
 Typical household nutrition (used when generating a plan request):
 
@@ -120,6 +122,7 @@ Polished mocked journey, runnable in Expo Go:
 14. **Budget-impossible generating UX**: after a plan generates, the generating screen waits for the retailer comparison and, if even the cheapest full shop is over the saved weekly budget, shows a “Here’s my best offer” insight (amount vs budget) with “See my week anyway” / “Change plan choices”, instead of silently proceeding.
 15. **Pack-aware shopping list**: list rows show “Buy 2 × 500g packs” from the recommended retailer’s basket line when a pack match exists, falling back to “Needed: Xg” otherwise.
 16. **Analytics wired** for `plan_generated`, `meal_swapped`, `plan_modified`, and `retailer_compared` (Shop tab compare switch + Compare My Shop) via a shared `analytics` singleton in `src/analytics/analytics.ts`. Still console-only (`AnalyticsLogger`), not sent anywhere.
+17. **Soft-goal recipe ranking** (`src/domain/plan-optimizer.ts`): when a household sets `nutritionGoals` or `cookingEffort: 'easy'`, the planner now picks the best-scoring safe recipe for each meal slot (cheaper, higher protein, higher fibre, more veg/fruit portions, or quicker, depending on the goal) instead of always keeping the seeded recipe. No goals + non-`easy` effort still leaves the curated week untouched.
 
 Also in place:
 
@@ -128,7 +131,7 @@ Also in place:
 - Reusable Mabel components (`MabelAvatar` is a placeholder, not emoji, ready to swap for artwork).
 - Shared `DietChips` and `AllergenChips`.
 - Copy module + screen tests that assert against `copy.*`.
-- Tests for basket optimiser, constraints, ingredient aggregation, meal swap, plan modification, plan generation, Compare My Shop, household targets, app-state (including product selections), copy, edit preferences, pack-aware shopping list, budget-impossible generating.
+- Tests for basket optimiser, constraints, ingredient aggregation, meal swap, plan modification, plan generation, plan/soft-goal optimiser, Compare My Shop, household targets, app-state (including product selections), copy, edit preferences, pack-aware shopping list, budget-impossible generating.
 
 ### MVP definition of done (from the original spec) — status
 
@@ -160,7 +163,7 @@ Ordered as the next useful work, not “everything ever”.
 - **Welcome “I already have an account”** is not a real account path (auth is explicitly later).
 - **Error UX from the spec** is mostly there. Generation retry, allergy/diet-safe refusal, and budget-impossible (“best I could do £X”) all exist. Reduced-motion on generating is still incomplete.
 - **Analytics events** are tracked for `plan_generated`, `meal_swapped`, `plan_modified`, `retailer_compared`. `onboarding_completed` and `shopping_item_checked` are defined in the union but not yet tracked.
-- **Soft optimisation in generation** is still incomplete: budget, goals, effort and cooking time are stored, but the planner does not pick cheaper/higher-protein/faster meals. Hard constraints (diet, allergens, dislikes, meal types) **are** enforced.
+- **Soft optimisation in generation**: `nutritionGoals` and `cookingEffort: 'easy'` now steer recipe choice per meal slot (see `plan-optimizer.ts` above). `maximumWeeklyBudget` and `cookingTimeLimitMinutes` still aren't planner inputs — there's no per-recipe budget allocation, and `cookingTimeLimitMinutes` is only enforced via `validateRecipeConstraints`/`COOKING_TIME`, not fed into ranking. Hard constraints (diet, allergens, dislikes, meal types) **are** enforced.
 
 ### Explicitly not MVP (do not build unless asked)
 
@@ -200,11 +203,11 @@ Mabel should appear on onboarding, generating, insights, empty states, conversat
 
 ## Suggested next milestone
 
-The previous milestone (editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, core analytics events) is done. If continuing from this file with no further instruction, implement:
+The previous milestone (editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, core analytics events, soft-goal recipe ranking) is done. If continuing from this file with no further instruction, implement:
 
 1. Account placeholders that do something real: show the demo email, a working “Sign out” and “Delete account” (both local-only, since auth doesn't exist yet — reuse the reset flow with distinct, honest copy) and simple Privacy/Terms screens (static content is fine).
 2. Track the remaining high-value analytics events already in the union: `onboarding_completed` (finish of preferences screen) and `shopping_item_checked` (Shop tab checkbox toggle).
 3. Reduced-motion support on the generating screen (respect `useReducedMotion` / `AccessibilityInfo.isReduceMotionEnabled`, skip the rotating Mabel copy animation).
-4. Start soft optimisation in the mock planner: use `nutritionGoals` and `cookingEffort` to prefer cheaper/higher-protein/quicker seeded recipes among the safe candidates, instead of picking the first constraint-safe match.
+4. Extend `plan-optimizer.ts` to factor in `maximumWeeklyBudget` (e.g. weight `estimateRecipeCostPerServing` more heavily, or hard-cap candidates once a running weekly total would exceed budget) and `cookingTimeLimitMinutes` as a soft ranking input alongside the existing `cookingEffort: 'easy'` signal.
 
 Keep mocks. Do not add live APIs, Supabase, or a marketing site unless explicitly asked.

@@ -1,6 +1,7 @@
 import { describe, expect, it } from '@jest/globals';
 
 import { createHousehold, validateRecipeHardConstraints, type PlanRequest } from '@/domain';
+import { SEEDED_WEEKLY_PLAN } from '@/fixtures';
 import { MockMealPlanningService } from '@/services';
 
 const baseRequest: PlanRequest = {
@@ -60,6 +61,31 @@ describe('constraint-safe mock plan generation', () => {
     expect(
       plan.days.flatMap((day) => day.meals.flatMap((meal) => meal.recipe.allergens)),
     ).not.toEqual(expect.arrayContaining(['nuts', 'peanuts']));
+  });
+
+  it('picks the highest-protein safe breakfast every day when high protein is the goal', async () => {
+    const service = new MockMealPlanningService({ delayMs: 0 });
+    const request: PlanRequest = {
+      ...baseRequest,
+      mealsPerDay: ['breakfast'],
+      preferences: { ...baseRequest.preferences, nutritionGoals: ['high_protein'] },
+    };
+
+    const plan = await service.generatePlan(request);
+    for (const day of plan.days) {
+      expect(day.meals[0].recipe.id).toBe('egg-spinach-toast');
+    }
+  });
+
+  it('keeps the seeded week’s day-to-day variety when no soft goals or easy effort are set', async () => {
+    const service = new MockMealPlanningService({ delayMs: 0 });
+    const request: PlanRequest = { ...baseRequest, mealsPerDay: ['breakfast'] };
+
+    const plan = await service.generatePlan(request);
+    const seededIds = SEEDED_WEEKLY_PLAN.days
+      .slice(0, request.durationDays)
+      .map((day) => day.meals.find((meal) => meal.type === 'breakfast')?.recipe.id);
+    expect(plan.days.map((day) => day.meals[0].recipe.id)).toEqual(seededIds);
   });
 
   it('refuses generation when no safe recipe exists for a requested meal', async () => {

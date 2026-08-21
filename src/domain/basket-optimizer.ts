@@ -3,6 +3,7 @@ import type {
   IngredientRequirement,
   IngredientUnit,
   ProductSelectionOverrides,
+  Recipe,
   RetailerBasket,
   RetailerBasketItem,
   RetailerComparison,
@@ -70,6 +71,30 @@ export function optimiseBasketItem(
         left.lineTotal - right.lineTotal || left.suppliedQuantity - right.suppliedQuantity,
     )[0] ?? null
   );
+}
+
+/**
+ * Cheapest-available cost of one serving, using the lowest-priced matching pack across the
+ * whole catalogue. A ranking heuristic for comparing recipes, not a basket total — the real
+ * shop total still comes from `buildRetailerBasket` / `compareRetailers` on the aggregated week.
+ */
+export function estimateRecipeCostPerServing(
+  recipe: Pick<Recipe, 'ingredients' | 'servings'>,
+  catalogue: GroceryProduct[],
+): number {
+  const total = recipe.ingredients.reduce((sum, ingredient) => {
+    const item = optimiseBasketItem(
+      {
+        ingredientId: ingredient.ingredientId,
+        name: ingredient.name,
+        quantity: ingredient.quantity,
+        unit: ingredient.unit,
+      },
+      catalogue,
+    );
+    return sum + (item?.lineTotal ?? 0);
+  }, 0);
+  return recipe.servings > 0 ? roundMoney(total / recipe.servings) : total;
 }
 
 export function buildRetailerBasket(

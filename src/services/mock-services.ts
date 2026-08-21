@@ -5,6 +5,7 @@ import {
   validateRecipeHardConstraints,
 } from '@/domain/constraints';
 import { createShoppingList } from '@/domain/ingredients';
+import { rankRecipesForRequest } from '@/domain/plan-optimizer';
 import type {
   GroceryProduct,
   IngredientRequirement,
@@ -113,14 +114,14 @@ export class MockMealPlanningService implements MealPlanningService {
     }
 
     const allowedRecipes = new Map(
-      request.mealsPerDay.map((mealType) => [
-        mealType,
-        SEEDED_RECIPES.filter(
+      request.mealsPerDay.map((mealType) => {
+        const safe = SEEDED_RECIPES.filter(
           (recipe) =>
             recipe.mealTypes.includes(mealType) &&
             validateRecipeHardConstraints(recipe, request).length === 0,
-        ),
-      ]),
+        );
+        return [mealType, rankRecipesForRequest(safe, request, SEEDED_GROCERY_CATALOGUE)] as const;
+      }),
     );
     const missingMealTypes = request.mealsPerDay.filter(
       (mealType) => allowedRecipes.get(mealType)?.length === 0,
@@ -128,6 +129,13 @@ export class MockMealPlanningService implements MealPlanningService {
     if (missingMealTypes.length > 0) {
       throw new NoSafePlanError(missingMealTypes);
     }
+
+    // With no goals and default effort, ranking scores every recipe 0 and the stable sort keeps
+    // `allowedRecipes` in seed order, so this only changes anything once the household has a
+    // soft preference — otherwise the curated week's day-to-day variety is left untouched.
+    const hasSoftPreferences =
+      (request.preferences.nutritionGoals?.length ?? 0) > 0 ||
+      request.preferences.cookingEffort === 'easy';
 
     const days = SEEDED_WEEKLY_PLAN.days
       .slice(0, request.durationDays ?? 7)
@@ -138,9 +146,14 @@ export class MockMealPlanningService implements MealPlanningService {
           .map((meal, mealIndex) => {
             const seedIsAllowed = validateRecipeHardConstraints(meal.recipe, request).length === 0;
             const candidates = allowedRecipes.get(meal.type) ?? [];
-            const recipe = seedIsAllowed
-              ? meal.recipe
-              : candidates[(dayIndex + mealIndex) % candidates.length];
+            // Soft preferences pick the single best-scoring safe recipe every time, so the
+            // household can see its goal actually reflected in the plan.
+            const recipe =
+              hasSoftPreferences && candidates.length > 0
+                ? candidates[0]
+                : seedIsAllowed
+                  ? meal.recipe
+                  : candidates[(dayIndex + mealIndex) % candidates.length];
             return {
               ...meal,
               id: `${date}-${meal.type}`,
