@@ -366,6 +366,8 @@ export const copy = {
     onlyMatchTitle: 'Best available match',
     onlyMatchBody: 'This is the only suitable demo product for this ingredient.',
     productMeta: (size: string, price: string) => `${size} · ${price}`,
+    changeFailedTitle: 'Product not changed',
+    changeFailed: "I couldn't save that product choice. Please try again.",
   },
   profile: {
     title: 'Profile',

@@ -2,6 +2,7 @@ import type {
   GroceryProduct,
   IngredientRequirement,
   IngredientUnit,
+  ProductSelectionOverrides,
   RetailerBasket,
   RetailerBasketItem,
   RetailerComparison,
@@ -14,7 +15,14 @@ const RETAILER_NAMES: Record<RetailerId, string> = {
   sainsburys: "Sainsbury's",
 };
 
-function toBaseQuantity(quantity: number, unit: IngredientUnit): {
+export function productSelectionKey(retailerId: RetailerId, ingredientId: string): string {
+  return `${retailerId}:${ingredientId}`;
+}
+
+function toBaseQuantity(
+  quantity: number,
+  unit: IngredientUnit,
+): {
   quantity: number;
   unit: IngredientUnit;
 } {
@@ -59,8 +67,7 @@ export function optimiseBasketItem(
   return (
     candidates.sort(
       (left, right) =>
-        left.lineTotal - right.lineTotal ||
-        left.suppliedQuantity - right.suppliedQuantity,
+        left.lineTotal - right.lineTotal || left.suppliedQuantity - right.suppliedQuantity,
     )[0] ?? null
   );
 }
@@ -69,13 +76,21 @@ export function buildRetailerBasket(
   retailerId: RetailerId,
   requirements: IngredientRequirement[],
   catalogue: GroceryProduct[],
+  selections: ProductSelectionOverrides = {},
 ): RetailerBasket {
   const products = catalogue.filter((product) => product.retailerId === retailerId);
   const items: RetailerBasketItem[] = [];
   const unavailableIngredientIds: string[] = [];
 
   for (const requirement of requirements) {
-    const item = optimiseBasketItem(requirement, products);
+    const selectedProductId = selections[productSelectionKey(retailerId, requirement.ingredientId)];
+    const selectedProduct = products.find(
+      (product) =>
+        product.id === selectedProductId && product.ingredientId === requirement.ingredientId,
+    );
+    const item =
+      (selectedProduct ? optimiseBasketItem(requirement, [selectedProduct]) : null) ??
+      optimiseBasketItem(requirement, products);
     if (item) {
       items.push(item);
     } else {
@@ -97,13 +112,12 @@ export function compareRetailers(
   requirements: IngredientRequirement[],
   catalogue: GroceryProduct[],
   retailerIds: RetailerId[] = ['tesco', 'asda', 'sainsburys'],
+  selections: ProductSelectionOverrides = {},
 ): RetailerComparison {
   const baskets = retailerIds.map((retailerId) =>
-    buildRetailerBasket(retailerId, requirements, catalogue),
+    buildRetailerBasket(retailerId, requirements, catalogue, selections),
   );
-  const complete = baskets.filter(
-    (basket) => basket.unavailableIngredientIds.length === 0,
-  );
+  const complete = baskets.filter((basket) => basket.unavailableIngredientIds.length === 0);
   const ordered = [...complete].sort((left, right) => left.subtotal - right.subtotal);
 
   return {

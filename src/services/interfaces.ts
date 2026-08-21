@@ -5,6 +5,7 @@ import type {
   MealSwapRequest,
   PlanModificationRequest,
   PlanRequest,
+  ProductSelectionOverrides,
   RetailerBasket,
   RetailerComparison,
   RetailerId,
@@ -20,7 +21,10 @@ export interface MealPlanningService {
 
 export interface ShoppingService {
   createList(plan: WeeklyPlan): Promise<ShoppingList>;
-  compareRetailers(requirements: IngredientRequirement[]): Promise<RetailerComparison>;
+  compareRetailers(
+    requirements: IngredientRequirement[],
+    selections?: ProductSelectionOverrides,
+  ): Promise<RetailerComparison>;
 }
 
 export interface CompareShopService {

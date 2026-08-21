@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { UserProfile, WeeklyPlan } from '@/domain/models';
+import type { ProductSelectionOverrides, UserProfile, WeeklyPlan } from '@/domain/models';
 
 export interface KeyValueStorage {
   getItem(key: string): Promise<string | null>;
@@ -14,6 +14,7 @@ export interface PersistedAppState {
   profile: UserProfile | null;
   currentPlan: WeeklyPlan | null;
   checkedShoppingItemIds: string[];
+  productSelections?: ProductSelectionOverrides;
 }
 
 export const EMPTY_APP_STATE: PersistedAppState = {
@@ -22,6 +23,7 @@ export const EMPTY_APP_STATE: PersistedAppState = {
   profile: null,
   currentPlan: null,
   checkedShoppingItemIds: [],
+  productSelections: {},
 };
 
 const APP_STATE_KEY = '@meal-mabel/app-state/v1';
@@ -41,9 +43,7 @@ export class AsyncStorageAdapter implements KeyValueStorage {
 }
 
 export class AppStateRepository {
-  public constructor(
-    private readonly storage: KeyValueStorage = new AsyncStorageAdapter(),
-  ) {}
+  public constructor(private readonly storage: KeyValueStorage = new AsyncStorageAdapter()) {}
 
   public async load(): Promise<PersistedAppState> {
     const serialized = await this.storage.getItem(APP_STATE_KEY);
@@ -55,7 +55,7 @@ export class AppStateRepository {
     if (!isPersistedAppState(parsed)) {
       throw new Error('Stored app state has an unsupported shape.');
     }
-    return parsed;
+    return { ...parsed, productSelections: parsed.productSelections ?? {} };
   }
 
   public async save(state: PersistedAppState): Promise<void> {
@@ -74,10 +74,7 @@ export class AppStateRepository {
     await this.patch({ currentPlan, checkedShoppingItemIds: [] });
   }
 
-  public async setShoppingItemChecked(
-    itemId: string,
-    checked: boolean,
-  ): Promise<void> {
+  public async setShoppingItemChecked(itemId: string, checked: boolean): Promise<void> {
     const state = await this.load();
     const ids = new Set(state.checkedShoppingItemIds);
     if (checked) {
@@ -92,9 +89,7 @@ export class AppStateRepository {
     await this.storage.removeItem(APP_STATE_KEY);
   }
 
-  private async patch(
-    patch: Partial<Omit<PersistedAppState, 'version'>>,
-  ): Promise<void> {
+  private async patch(patch: Partial<Omit<PersistedAppState, 'version'>>): Promise<void> {
     const state = await this.load();
     await this.save({ ...state, ...patch, version: 1 });
   }
@@ -112,6 +107,12 @@ function isPersistedAppState(value: unknown): value is PersistedAppState {
     (candidate.profile === null || typeof candidate.profile === 'object') &&
     (candidate.currentPlan === null || typeof candidate.currentPlan === 'object') &&
     Array.isArray(candidate.checkedShoppingItemIds) &&
-    candidate.checkedShoppingItemIds.every((id) => typeof id === 'string')
+    candidate.checkedShoppingItemIds.every((id) => typeof id === 'string') &&
+    (candidate.productSelections === undefined ||
+      (typeof candidate.productSelections === 'object' &&
+        candidate.productSelections !== null &&
+        Object.values(candidate.productSelections).every(
+          (productId) => typeof productId === 'string',
+        )))
   );
 }

@@ -75,6 +75,7 @@ beforeEach(() => {
     generatePlan: async () => SEEDED_WEEKLY_PLAN,
     swapMeal: async () => undefined,
     modifyPlan: async () => ({ ok: false, reason: 'unsupported-request' }),
+    selectBasketProduct: async () => undefined,
     toggleShoppingItem: async () => undefined,
     clearApp: async () => undefined,
   });

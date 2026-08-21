@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
-import { usePlanData } from '@/app-state/app-provider';
+import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
 import {
   AppHeader,
   AppText,
@@ -20,8 +20,11 @@ import { spacing } from '@/theme';
 
 export default function RetailerBasketScreen() {
   const { id } = useLocalSearchParams<{ id: RetailerId }>();
+  const { selectBasketProduct } = useMealMabelApp();
   const { comparison, isLoading } = usePlanData();
   const [selected, setSelected] = useState<RetailerBasketItem | null>(null);
+  const [savingProductId, setSavingProductId] = useState<string>();
+  const [error, setError] = useState<string>();
   const basket = comparison?.baskets.find((item) => item.retailerId === id);
   if (isLoading || !basket) {
     return (
@@ -66,10 +69,7 @@ export default function RetailerBasketScreen() {
             </AppText>
             <AppText variant="bodyStrong">{formatGbp(item.lineTotal)}</AppText>
           </View>
-          <SecondaryButton
-            label={copy.retailer.chooseAnother}
-            onPress={() => setSelected(item)}
-          />
+          <SecondaryButton label={copy.retailer.chooseAnother} onPress={() => setSelected(item)} />
         </Card>
       ))}
       <BottomSheet
@@ -89,7 +89,16 @@ export default function RetailerBasketScreen() {
               </AppText>
               <SecondaryButton
                 label={copy.retailer.chooseThis}
-                onPress={() => setSelected(null)}
+                loading={savingProductId === product.id}
+                disabled={Boolean(savingProductId)}
+                onPress={() => {
+                  setSavingProductId(product.id);
+                  setError(undefined);
+                  void selectBasketProduct(basket.retailerId, product.ingredientId, product.id)
+                    .then(() => setSelected(null))
+                    .catch(() => setError(copy.retailer.changeFailed))
+                    .finally(() => setSavingProductId(undefined));
+                }}
               />
             </Card>
           ))
@@ -98,6 +107,9 @@ export default function RetailerBasketScreen() {
             {copy.retailer.onlyMatchBody}
           </MabelInsight>
         )}
+        {error ? (
+          <MabelInsight title={copy.retailer.changeFailedTitle}>{error}</MabelInsight>
+        ) : null}
       </BottomSheet>
     </Screen>
   );

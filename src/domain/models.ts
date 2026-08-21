@@ -202,6 +202,8 @@ export interface RetailerBasketItem {
   lineTotal: number;
 }
 
+export type ProductSelectionOverrides = Record<string, string>;
+
 export interface RetailerComparison {
   baskets: RetailerBasket[];
   cheapestRetailerId: RetailerId | null;

@@ -1,7 +1,4 @@
-import {
-  buildRetailerBasket,
-  compareRetailers,
-} from '@/domain/basket-optimizer';
+import { buildRetailerBasket, compareRetailers } from '@/domain/basket-optimizer';
 import { validatePlanRequest, validateRecipeConstraints } from '@/domain/constraints';
 import { createShoppingList } from '@/domain/ingredients';
 import type {
@@ -12,16 +9,14 @@ import type {
   PlanDay,
   PlanModificationRequest,
   PlanRequest,
+  ProductSelectionOverrides,
   RetailerComparison,
   RetailerId,
   RetailerBasket,
   ShoppingList,
   WeeklyPlan,
 } from '@/domain/models';
-import {
-  calculateDayNutrition,
-  calculatePlanNutrition,
-} from '@/domain/nutrition';
+import { calculateDayNutrition, calculatePlanNutrition } from '@/domain/nutrition';
 import { SEEDED_GROCERY_CATALOGUE } from '@/fixtures/catalogue';
 import { SEEDED_RECIPES } from '@/fixtures/recipes';
 import { SEEDED_WEEKLY_PLAN } from '@/fixtures/weekly-plan';
@@ -106,20 +101,20 @@ export class MockMealPlanningService implements MealPlanningService {
     const days = SEEDED_WEEKLY_PLAN.days
       .slice(0, request.durationDays ?? 7)
       .map((seedDay, dayIndex) => {
-      const date = dateAtOffset(request.weekStarting, dayIndex);
-      const meals = seedDay.meals
-        .filter((meal) => request.mealsPerDay.includes(meal.type))
-        .map((meal) => ({
-          ...meal,
-          id: `${date}-${meal.type}`,
-          servings: request.household.memberCount,
-        }));
-      return {
-        ...seedDay,
-        date,
-        meals,
-        nutrition: calculateDayNutrition(meals),
-      };
+        const date = dateAtOffset(request.weekStarting, dayIndex);
+        const meals = seedDay.meals
+          .filter((meal) => request.mealsPerDay.includes(meal.type))
+          .map((meal) => ({
+            ...meal,
+            id: `${date}-${meal.type}`,
+            servings: request.household.memberCount,
+          }));
+        return {
+          ...seedDay,
+          date,
+          meals,
+          nutrition: calculateDayNutrition(meals),
+        };
       });
     return {
       ...SEEDED_WEEKLY_PLAN,
@@ -132,10 +127,7 @@ export class MockMealPlanningService implements MealPlanningService {
     };
   }
 
-  public async swapMeal(
-    plan: WeeklyPlan,
-    request: MealSwapRequest,
-  ): Promise<WeeklyPlan> {
+  public async swapMeal(plan: WeeklyPlan, request: MealSwapRequest): Promise<WeeklyPlan> {
     await wait(this.delayMs);
     if (request.planId !== plan.id) {
       throw new Error('Swap request does not match the supplied plan.');
@@ -143,12 +135,9 @@ export class MockMealPlanningService implements MealPlanningService {
 
     return updateMeal(plan, request.date, request.mealId, (meal) => {
       const replacement = request.replacementRecipeId
-        ? SEEDED_RECIPES.find(
-            (recipe) => recipe.id === request.replacementRecipeId,
-          )
+        ? SEEDED_RECIPES.find((recipe) => recipe.id === request.replacementRecipeId)
         : SEEDED_RECIPES.find(
-            (recipe) =>
-              recipe.id !== meal.recipe.id && recipe.mealTypes.includes(meal.type),
+            (recipe) => recipe.id !== meal.recipe.id && recipe.mealTypes.includes(meal.type),
           );
       if (!replacement || !replacement.mealTypes.includes(meal.type)) {
         throw new Error('No suitable replacement recipe was found.');
@@ -157,10 +146,7 @@ export class MockMealPlanningService implements MealPlanningService {
     });
   }
 
-  public async modifyPlan(
-    plan: WeeklyPlan,
-    request: PlanModificationRequest,
-  ): Promise<WeeklyPlan> {
+  public async modifyPlan(plan: WeeklyPlan, request: PlanModificationRequest): Promise<WeeklyPlan> {
     await wait(this.delayMs);
     if (request.planId !== plan.id) {
       throw new Error('Modification request does not match the supplied plan.');
@@ -171,22 +157,15 @@ export class MockMealPlanningService implements MealPlanningService {
       if (modification.type === 'swap-meal') {
         modified = await this.swapMeal(modified, modification.request);
       } else if (modification.type === 'remove-meal') {
-        modified = updateMeal(
-          modified,
-          modification.date,
-          modification.mealId,
-          () => null,
-        );
+        modified = updateMeal(modified, modification.date, modification.mealId, () => null);
       } else {
         if (modification.servings < 1) {
           throw new Error('Meal servings must be at least one.');
         }
-        modified = updateMeal(
-          modified,
-          modification.date,
-          modification.mealId,
-          (meal) => ({ ...meal, servings: modification.servings }),
-        );
+        modified = updateMeal(modified, modification.date, modification.mealId, (meal) => ({
+          ...meal,
+          servings: modification.servings,
+        }));
       }
     }
     return modified;
@@ -196,9 +175,7 @@ export class MockMealPlanningService implements MealPlanningService {
     const allowedIngredientIds = new Set(
       SEEDED_RECIPES.filter(
         (recipe) => validateRecipeConstraints(recipe, request).length === 0,
-      ).flatMap((recipe) =>
-        recipe.ingredients.map((ingredient) => ingredient.ingredientId),
-      ),
+      ).flatMap((recipe) => recipe.ingredients.map((ingredient) => ingredient.ingredientId)),
     );
     return SEEDED_GROCERY_CATALOGUE.filter((product) =>
       allowedIngredientIds.has(product.ingredientId),
@@ -220,9 +197,10 @@ export class MockShoppingService implements ShoppingService {
 
   public async compareRetailers(
     requirements: IngredientRequirement[],
+    selections: ProductSelectionOverrides = {},
   ): Promise<RetailerComparison> {
     await wait(this.delayMs);
-    return compareRetailers(requirements, SEEDED_GROCERY_CATALOGUE);
+    return compareRetailers(requirements, SEEDED_GROCERY_CATALOGUE, undefined, selections);
   }
 }
 
@@ -238,13 +216,9 @@ export class MockGroceryCatalogueService implements GroceryCatalogueService {
     return [...SEEDED_GROCERY_CATALOGUE];
   }
 
-  public async getProductsForIngredient(
-    ingredientId: string,
-  ): Promise<GroceryProduct[]> {
+  public async getProductsForIngredient(ingredientId: string): Promise<GroceryProduct[]> {
     await wait(this.delayMs);
-    return SEEDED_GROCERY_CATALOGUE.filter(
-      (product) => product.ingredientId === ingredientId,
-    );
+    return SEEDED_GROCERY_CATALOGUE.filter((product) => product.ingredientId === ingredientId);
   }
 }
 
@@ -252,10 +226,7 @@ export class MockGroceryCatalogService
   extends MockGroceryCatalogueService
   implements GroceryCatalogService
 {
-  public async searchProducts(
-    query: string,
-    retailer: RetailerId,
-  ): Promise<GroceryProduct[]> {
+  public async searchProducts(query: string, retailer: RetailerId): Promise<GroceryProduct[]> {
     const products = await this.getProducts();
     const normalized = query.trim().toLowerCase();
     return products.filter(
@@ -270,16 +241,9 @@ export class MockGroceryCatalogService
 export class MockBasketService implements BasketService {
   public constructor(private readonly options: MockServiceOptions = {}) {}
 
-  public async buildBasket(
-    plan: WeeklyPlan,
-    retailer: RetailerId,
-  ): Promise<RetailerBasket> {
+  public async buildBasket(plan: WeeklyPlan, retailer: RetailerId): Promise<RetailerBasket> {
     await wait(this.options.delayMs ?? 150);
-    return buildRetailerBasket(
-      retailer,
-      createShoppingList(plan).items,
-      SEEDED_GROCERY_CATALOGUE,
-    );
+    return buildRetailerBasket(retailer, createShoppingList(plan).items, SEEDED_GROCERY_CATALOGUE);
   }
 
   public async compareRetailers(
@@ -287,10 +251,6 @@ export class MockBasketService implements BasketService {
     retailers: RetailerId[],
   ): Promise<RetailerComparison> {
     await wait(this.options.delayMs ?? 150);
-    return compareRetailers(
-      createShoppingList(plan).items,
-      SEEDED_GROCERY_CATALOGUE,
-      retailers,
-    );
+    return compareRetailers(createShoppingList(plan).items, SEEDED_GROCERY_CATALOGUE, retailers);
   }
 }
