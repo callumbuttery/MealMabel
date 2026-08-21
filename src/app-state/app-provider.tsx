@@ -143,6 +143,14 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       const plan = await planner.generatePlan(request);
       await persist({
         ...state,
+        profile: state.profile
+          ? {
+              ...state.profile,
+              household: request.household,
+              preferences: request.preferences,
+              updatedAt: new Date().toISOString(),
+            }
+          : null,
         currentPlan: plan,
         checkedShoppingItemIds: [],
       });

@@ -22,7 +22,8 @@ export default function PlanSummaryScreen() {
   const best = comparison?.baskets.find(
     (basket) => basket.retailerId === comparison.cheapestRetailerId,
   );
-  if (!plan || isLoading || !best) {
+  const budget = state.profile?.preferences.maximumWeeklyBudget;
+  if (!plan || isLoading || !best || budget === undefined) {
     return (
       <Screen scroll={false} contentStyle={styles.loading}>
         <LoadingMabel label={copy.planSummary.loading} />
@@ -31,7 +32,7 @@ export default function PlanSummaryScreen() {
   }
   const savings = comparison?.savingsAgainstMostExpensive ?? 0;
   const mealCount = plan.days.reduce((count, day) => count + day.meals.length, 0);
-  const budget = state.profile?.preferences.maximumWeeklyBudget ?? 60;
+  const budgetDifference = budget - best.subtotal;
   return (
     <Screen>
       <View style={styles.hero}>
@@ -45,8 +46,10 @@ export default function PlanSummaryScreen() {
           <Metric value={`${mealCount}`} label={copy.planSummary.meals} />
           <Metric value={formatGbp(best.subtotal)} label={copy.planSummary.estimatedShop} />
           <Metric
-            value={formatGbp(Math.max(0, budget - best.subtotal))}
-            label={copy.planSummary.underBudget}
+            value={formatGbp(Math.abs(budgetDifference))}
+            label={
+              budgetDifference >= 0 ? copy.planSummary.underBudget : copy.planSummary.overBudget
+            }
           />
           <Metric
             value={copy.planSummary.proteinValue(
@@ -78,7 +81,9 @@ function Metric({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.metric}>
       <AppText variant="h2">{value}</AppText>
-      <AppText variant="caption" tone="muted">{label}</AppText>
+      <AppText variant="caption" tone="muted">
+        {label}
+      </AppText>
     </View>
   );
 }

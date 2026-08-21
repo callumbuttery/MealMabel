@@ -21,6 +21,8 @@ export default function HomeScreen() {
   const best = comparison?.baskets.find(
     (basket) => basket.retailerId === comparison.cheapestRetailerId,
   );
+  const budget = state.profile?.preferences.maximumWeeklyBudget;
+  const budgetDifference = best && budget !== undefined ? budget - best.subtotal : undefined;
   return (
     <Screen>
       <View style={styles.header}>
@@ -47,8 +49,10 @@ export default function HomeScreen() {
               <Stat value={best?.retailerName ?? copy.home.comparing} label={copy.home.bestShop} />
             </View>
             <MabelInsight title={copy.home.weekSorted}>
-              {best
-                ? copy.home.underBudget(formatGbp(Math.max(0, 60 - best.subtotal)))
+              {best && budgetDifference !== undefined
+                ? budgetDifference >= 0
+                  ? copy.home.underBudget(formatGbp(budgetDifference))
+                  : copy.home.overBudget(formatGbp(Math.abs(budgetDifference)))
                 : copy.home.checkingShop}
             </MabelInsight>
             <PrimaryButton label={copy.home.viewPlan} onPress={() => router.push('/(tabs)/plan')} />

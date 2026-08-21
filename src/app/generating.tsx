@@ -3,17 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 
 import { useMealMabelApp } from '@/app-state/app-provider';
-import {
-  AppText,
-  Blob,
-  LoadingMabel,
-  MabelInsight,
-  PrimaryButton,
-  Screen,
-} from '@/components';
+import { AppText, Blob, LoadingMabel, MabelInsight, PrimaryButton, Screen } from '@/components';
 import {
   aggregateHouseholdTargets,
   createHousehold,
+  type CookingEffort,
   type MealType,
   type PlanRequest,
   type RetailerId,
@@ -27,6 +21,7 @@ export default function GeneratingScreen() {
     days?: string;
     meals?: string;
     retailers?: string;
+    effort?: string;
   }>();
   const { state, onboardingDraft, generatePlan } = useMealMabelApp();
   const [step, setStep] = useState(0);
@@ -36,6 +31,7 @@ export default function GeneratingScreen() {
   const daysParam = params.days;
   const mealsParam = params.meals;
   const retailersParam = params.retailers;
+  const effortParam = params.effort;
 
   const run = useCallback(async () => {
     setError(null);
@@ -53,27 +49,32 @@ export default function GeneratingScreen() {
       onboardingDraft.members,
     );
     const householdTargets = aggregateHouseholdTargets(household.members);
+    const requestedBudget = Number(budgetParam);
+    const maximumWeeklyBudget =
+      Number.isFinite(requestedBudget) && requestedBudget >= 20 && requestedBudget <= 300
+        ? requestedBudget
+        : preferences.maximumWeeklyBudget;
+    const cookingEffort: CookingEffort =
+      effortParam === 'normal' || effortParam === 'enthusiastic'
+        ? effortParam
+        : effortParam === 'easy'
+          ? effortParam
+          : (preferences.cookingEffort ?? 'easy');
     const request: PlanRequest = {
       household,
       preferences: {
         ...preferences,
-        maximumWeeklyBudget: Number(budgetParam ?? 60),
-        preferredRetailers: (retailersParam?.split(',') ?? [
-          'tesco',
-          'asda',
-          'sainsburys',
-        ]) as RetailerId[],
+        maximumWeeklyBudget,
+        cookingEffort,
+        preferredRetailers: (retailersParam?.split(',') ??
+          preferences.preferredRetailers) as RetailerId[],
         dailyCalorieTarget: householdTargets.caloriesKcal,
         dailyProteinTargetG: householdTargets.proteinG,
         dailyFibreTargetG: householdTargets.fibreG,
       },
       weekStarting: monday.toISOString().slice(0, 10),
       durationDays: Number(daysParam) === 3 ? 3 : Number(daysParam) === 5 ? 5 : 7,
-      mealsPerDay: (mealsParam?.split(',') ?? [
-        'breakfast',
-        'lunch',
-        'dinner',
-      ]) as MealType[],
+      mealsPerDay: (mealsParam?.split(',') ?? ['breakfast', 'lunch', 'dinner']) as MealType[],
     };
     try {
       await generatePlan(request);
@@ -84,6 +85,7 @@ export default function GeneratingScreen() {
   }, [
     budgetParam,
     daysParam,
+    effortParam,
     generatePlan,
     mealsParam,
     onboardingDraft.adults,

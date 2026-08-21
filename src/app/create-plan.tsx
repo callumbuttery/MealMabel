@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { useMealMabelApp } from '@/app-state/app-provider';
 import {
   AppHeader,
   AppText,
@@ -21,14 +22,19 @@ const RETAILERS = Object.keys(copy.retailers) as RetailerId[];
 const EFFORTS = Object.keys(copy.createPlan.effort) as CookingEffort[];
 
 export default function CreatePlanScreen() {
-  const [budget, setBudget] = useState('60');
+  const { state } = useMealMabelApp();
+  const preferences = state.profile?.preferences;
+  const [budget, setBudget] = useState(String(preferences?.maximumWeeklyBudget ?? 60));
   const [days, setDays] = useState(7);
   const [meals, setMeals] = useState<MealType[]>([...MEALS]);
-  const [effort, setEffort] = useState<CookingEffort>('easy');
-  const [retailers, setRetailers] = useState<RetailerId[]>([...RETAILERS]);
+  const [effort, setEffort] = useState<CookingEffort>(preferences?.cookingEffort ?? 'easy');
+  const [retailers, setRetailers] = useState<RetailerId[]>(
+    preferences?.preferredRetailers.length ? [...preferences.preferredRetailers] : [...RETAILERS],
+  );
   const toggle = <T extends string>(value: T, values: T[], set: (v: T[]) => void) =>
     set(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
-  const valid = Number(budget) >= 20 && Number(budget) <= 300 && meals.length > 0 && retailers.length > 0;
+  const valid =
+    Number(budget) >= 20 && Number(budget) <= 300 && meals.length > 0 && retailers.length > 0;
 
   return (
     <Screen>
@@ -110,6 +116,7 @@ export default function CreatePlanScreen() {
               days: String(days),
               meals: meals.join(','),
               retailers: retailers.join(','),
+              effort,
             },
           })
         }

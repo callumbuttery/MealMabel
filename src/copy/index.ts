@@ -154,6 +154,8 @@ export const copy = {
     comparing: 'Comparing',
     weekSorted: 'Your week is sorted',
     underBudget: (amount: string) => `I've planned the week and kept you ${amount} under budget.`,
+    overBudget: (amount: string) =>
+      `This basket is ${amount} over your budget. Your preferences are still intact.`,
     checkingShop: "I'm checking the best-value shop for your plan.",
     viewPlan: 'View plan',
     viewList: 'View shopping list',
@@ -222,6 +224,7 @@ export const copy = {
     meals: 'meals',
     estimatedShop: 'estimated shop',
     underBudget: 'under budget',
+    overBudget: 'over budget',
     proteinDay: 'protein/day',
     proteinValue: (grams: number) => `~${grams}g`,
     recommendBadge: 'Top pick',

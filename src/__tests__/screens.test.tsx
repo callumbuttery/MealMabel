@@ -1,8 +1,9 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import { beforeEach, expect, jest, test } from '@jest/globals';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import WelcomeScreen from '@/app/(onboarding)';
+import HomeScreen from '@/app/(tabs)';
 import PlanScreen from '@/app/(tabs)/plan';
 import ShopScreen from '@/app/(tabs)/shop';
 import AskMabelScreen from '@/app/ask-mabel';
@@ -14,6 +15,7 @@ import {
   compareRetailers,
   createShoppingList,
   syncHouseholdMembers,
+  type UserProfile,
 } from '@/domain';
 import { copy } from '@/copy';
 import { SEEDED_GROCERY_CATALOGUE, SEEDED_WEEKLY_PLAN } from '@/fixtures';
@@ -38,6 +40,24 @@ const EMPTY_APP_STATE = {
   currentPlan: null,
   checkedShoppingItemIds: [],
 };
+const PROFILE = {
+  id: 'local-user',
+  name: 'You',
+  householdId: 'household-local',
+  preferences: {
+    dietaryPreferences: ['none'],
+    cookingEffort: 'normal',
+    excludedIngredients: [],
+    allergens: [],
+    dailyCalorieTarget: 2200,
+    dailyProteinTargetG: 130,
+    maximumWeeklyBudget: 95,
+    preferredRetailers: ['tesco', 'asda'],
+    cookingTimeLimitMinutes: 40,
+  },
+  createdAt: '2026-08-01T00:00:00.000Z',
+  updatedAt: '2026-08-01T00:00:00.000Z',
+} satisfies UserProfile;
 
 beforeEach(() => {
   mockUseLocalSearchParams.mockReturnValue({});
@@ -74,6 +94,40 @@ test('create plan starts with all core choices visible', async () => {
   expect(view.getByText(copy.retailers.sainsburys)).toBeTruthy();
 });
 
+test('create plan sends the selected cooking effort into generation', async () => {
+  const view = await render(<CreatePlanScreen />);
+  await fireEvent.press(view.getByText(copy.createPlan.effort.enthusiastic.label));
+  await fireEvent.press(view.getByRole('button', { name: copy.createPlan.cta }));
+
+  expect(jest.mocked(router.push)).toHaveBeenLastCalledWith(
+    expect.objectContaining({
+      params: expect.objectContaining({ effort: 'enthusiastic', budget: '60' }),
+    }),
+  );
+});
+
+test('create plan restores the saved budget, effort and retailers', async () => {
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: {
+      ...EMPTY_APP_STATE,
+      onboardingComplete: true,
+      profile: PROFILE,
+    },
+  });
+
+  const view = await render(<CreatePlanScreen />);
+  expect(view.getByLabelText(copy.createPlan.budgetLabel).props.value).toBe('95');
+  expect(
+    view.getByRole('checkbox', {
+      name: copy.createPlan.effort.normal.label,
+    }).props.accessibilityState,
+  ).toMatchObject({ checked: true });
+  expect(
+    view.getByRole('checkbox', { name: copy.retailers.sainsburys }).props.accessibilityState,
+  ).toMatchObject({ checked: false });
+});
+
 test('weekly plan renders seeded meals by day', async () => {
   mockUseApp.mockReturnValue({
     ...mockUseApp(),
@@ -82,6 +136,36 @@ test('weekly plan renders seeded meals by day', async () => {
   const view = await render(<PlanScreen />);
   expect(view.getByText('Monday')).toBeTruthy();
   expect(view.getByText('Greek Yoghurt Protein Oats')).toBeTruthy();
+});
+
+test('home compares the basket with the saved plan budget', async () => {
+  const requirements = aggregateIngredientRequirements(SEEDED_WEEKLY_PLAN);
+  const comparison = compareRetailers(requirements, SEEDED_GROCERY_CATALOGUE);
+  const best = comparison.baskets.find(
+    (basket) => basket.retailerId === comparison.cheapestRetailerId,
+  )!;
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: {
+      ...EMPTY_APP_STATE,
+      onboardingComplete: true,
+      currentPlan: SEEDED_WEEKLY_PLAN,
+      profile: {
+        ...PROFILE,
+        preferences: {
+          ...PROFILE.preferences,
+          maximumWeeklyBudget: best.subtotal + 12.34,
+        },
+      },
+    },
+  });
+  mockUsePlanData.mockReturnValue({
+    isLoading: false,
+    comparison,
+  });
+
+  const view = await render(<HomeScreen />);
+  expect(view.getByText(copy.home.underBudget('£12.34'))).toBeTruthy();
 });
 
 test('Ask Mabel offers structured changes for the selected meal', async () => {
