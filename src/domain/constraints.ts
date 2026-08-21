@@ -1,3 +1,4 @@
+import { blockedAllergensForRequest, recipeContainsBlockedAllergen } from '@/domain/allergens';
 import type { PlanRequest, Recipe, WeeklyPlan } from '@/domain/models';
 
 export interface ConstraintViolation {
@@ -6,6 +7,7 @@ export interface ConstraintViolation {
     | 'INVALID_TARGET'
     | 'INVALID_BUDGET'
     | 'INVALID_MEALS'
+    | 'DIET'
     | 'EXCLUDED_INGREDIENT'
     | 'ALLERGEN'
     | 'COOKING_TIME';
@@ -17,8 +19,7 @@ export function validatePlanRequest(request: PlanRequest): ConstraintViolation[]
 
   const memberCountMismatch =
     request.household.memberCount < 1 ||
-    request.household.adultCount + request.household.childCount !==
-      request.household.memberCount;
+    request.household.adultCount + request.household.childCount !== request.household.memberCount;
   const peopleMismatch =
     request.household.members.length !== request.household.memberCount ||
     request.household.members.filter((member) => member.kind === 'adult').length !==
@@ -31,10 +32,7 @@ export function validatePlanRequest(request: PlanRequest): ConstraintViolation[]
       message: 'Household people must match the adult and child counts.',
     });
   }
-  if (
-    request.preferences.dailyCalorieTarget <= 0 ||
-    request.preferences.dailyProteinTargetG <= 0
-  ) {
+  if (request.preferences.dailyCalorieTarget <= 0 || request.preferences.dailyProteinTargetG <= 0) {
     violations.push({
       code: 'INVALID_TARGET',
       message: 'Calorie and protein targets must be greater than zero.',
@@ -46,7 +44,10 @@ export function validatePlanRequest(request: PlanRequest): ConstraintViolation[]
       message: 'Weekly budget must be greater than zero.',
     });
   }
-  if (request.mealsPerDay.length === 0 || new Set(request.mealsPerDay).size !== request.mealsPerDay.length) {
+  if (
+    request.mealsPerDay.length === 0 ||
+    new Set(request.mealsPerDay).size !== request.mealsPerDay.length
+  ) {
     violations.push({
       code: 'INVALID_MEALS',
       message: 'At least one unique meal type must be requested.',
@@ -56,23 +57,44 @@ export function validatePlanRequest(request: PlanRequest): ConstraintViolation[]
   return violations;
 }
 
-export function validateRecipeConstraints(
+function recipeMatchesDiet(recipe: Recipe, request: PlanRequest): boolean {
+  const configuredDiet =
+    request.preferences.dietType ??
+    request.preferences.dietaryPreferences.find((diet) => diet !== 'none') ??
+    'anything';
+  const diet = configuredDiet.replaceAll('-', '_');
+  if (diet === 'anything' || diet === 'none') return true;
+  if (diet === 'vegan') return recipe.tags.includes('vegan');
+  if (diet === 'vegetarian') {
+    return recipe.tags.some((tag) => tag === 'vegetarian' || tag === 'vegan');
+  }
+  if (diet === 'pescatarian') {
+    return recipe.tags.some((tag) => ['pescatarian', 'vegetarian', 'vegan'].includes(tag));
+  }
+  return true;
+}
+
+export function validateRecipeHardConstraints(
   recipe: Recipe,
   request: PlanRequest,
 ): ConstraintViolation[] {
   const violations: ConstraintViolation[] = [];
-  const exclusions = new Set(
-    request.preferences.excludedIngredients.map((item) => item.toLowerCase()),
-  );
-  const allergens = new Set(
-    request.preferences.allergens.map((item) => item.toLowerCase()),
-  );
+  const exclusions = request.preferences.excludedIngredients.map(normalise).filter(Boolean);
+  const allergens = blockedAllergensForRequest(request);
 
+  if (!recipeMatchesDiet(recipe, request)) {
+    violations.push({
+      code: 'DIET',
+      message: `${recipe.name} does not match the household diet.`,
+    });
+  }
   if (
-    recipe.ingredients.some(
-      (ingredient) =>
-        exclusions.has(ingredient.ingredientId.toLowerCase()) ||
-        exclusions.has(ingredient.name.toLowerCase()),
+    exclusions.some((excluded) =>
+      recipe.ingredients.some(
+        (ingredient) =>
+          normalise(ingredient.ingredientId).includes(excluded) ||
+          normalise(ingredient.name).includes(excluded),
+      ),
     )
   ) {
     violations.push({
@@ -80,12 +102,25 @@ export function validateRecipeConstraints(
       message: `${recipe.name} contains an excluded ingredient.`,
     });
   }
-  if (recipe.allergens.some((allergen) => allergens.has(allergen.toLowerCase()))) {
+  if (recipeContainsBlockedAllergen(recipe, allergens)) {
     violations.push({
       code: 'ALLERGEN',
       message: `${recipe.name} contains a household allergen.`,
     });
   }
+
+  return violations;
+}
+
+function normalise(value: string): string {
+  return value.toLowerCase().replaceAll('-', ' ').trim();
+}
+
+export function validateRecipeConstraints(
+  recipe: Recipe,
+  request: PlanRequest,
+): ConstraintViolation[] {
+  const violations = validateRecipeHardConstraints(recipe, request);
   if (
     recipe.prepTimeMinutes + recipe.cookTimeMinutes >
     request.preferences.cookingTimeLimitMinutes

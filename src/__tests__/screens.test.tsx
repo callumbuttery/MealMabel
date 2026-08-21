@@ -3,6 +3,7 @@ import { beforeEach, expect, jest, test } from '@jest/globals';
 import { router, useLocalSearchParams } from 'expo-router';
 
 import WelcomeScreen from '@/app/(onboarding)';
+import HouseholdScreen from '@/app/(onboarding)/household';
 import HomeScreen from '@/app/(tabs)';
 import PlanScreen from '@/app/(tabs)/plan';
 import ShopScreen from '@/app/(tabs)/shop';
@@ -13,11 +14,12 @@ import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
 import {
   aggregateIngredientRequirements,
   compareRetailers,
+  createHousehold,
   createShoppingList,
   syncHouseholdMembers,
   type UserProfile,
 } from '@/domain';
-import { copy } from '@/copy';
+import { copy, formatAllergenList } from '@/copy';
 import { SEEDED_GROCERY_CATALOGUE, SEEDED_WEEKLY_PLAN } from '@/fixtures';
 
 jest.mock('expo-router', () => ({
@@ -88,21 +90,40 @@ test('onboarding introduces Mabel and offers a fast start', async () => {
   expect(view.getByRole('button', { name: copy.welcome.getStarted })).toBeTruthy();
 });
 
+test('household setup captures a food preference for each person', async () => {
+  const view = await render(<HouseholdScreen />);
+  expect(view.getByText(copy.household.diet)).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.diets.anything })).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.diets.vegan })).toBeTruthy();
+  expect(view.getByText(copy.household.allergens)).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.allergens.milk })).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.allergens.peanuts })).toBeTruthy();
+});
+
 test('create plan starts with all core choices visible', async () => {
   const view = await render(<CreatePlanScreen />);
   expect(view.getByText(copy.createPlan.budgetHeadline)).toBeTruthy();
   expect(view.getByText(copy.mealTypes.breakfast)).toBeTruthy();
   expect(view.getByText(copy.retailers.sainsburys)).toBeTruthy();
+  expect(view.getByText(copy.createPlan.diet)).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.diets.vegetarian })).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.diets.vegan })).toBeTruthy();
+  expect(view.getByRole('checkbox', { name: copy.diets.pescatarian })).toBeTruthy();
 });
 
 test('create plan sends the selected cooking effort into generation', async () => {
   const view = await render(<CreatePlanScreen />);
   await fireEvent.press(view.getByText(copy.createPlan.effort.enthusiastic.label));
+  await fireEvent.press(view.getByText(copy.diets.vegetarian));
   await fireEvent.press(view.getByRole('button', { name: copy.createPlan.cta }));
 
   expect(jest.mocked(router.push)).toHaveBeenLastCalledWith(
     expect.objectContaining({
-      params: expect.objectContaining({ effort: 'enthusiastic', budget: '60' }),
+      params: expect.objectContaining({
+        effort: 'enthusiastic',
+        budget: '60',
+        diet: 'vegetarian',
+      }),
     }),
   );
 });
@@ -129,6 +150,37 @@ test('create plan restores the saved budget, effort and retailers', async () => 
   ).toMatchObject({ checked: false });
 });
 
+test('create plan cannot loosen a person’s diet', async () => {
+  const member = {
+    ...syncHouseholdMembers(1, 0)[0],
+    dietType: 'vegan' as const,
+  };
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: {
+      ...EMPTY_APP_STATE,
+      onboardingComplete: true,
+      profile: {
+        ...PROFILE,
+        household: createHousehold(1, 0, [member]),
+        preferences: {
+          ...PROFILE.preferences,
+          dietType: 'vegan',
+          dietaryPreferences: ['vegan'],
+        },
+      },
+    },
+  });
+
+  const view = await render(<CreatePlanScreen />);
+  expect(
+    view.getByRole('checkbox', { name: copy.diets.anything }).props.accessibilityState,
+  ).toMatchObject({ disabled: true });
+  expect(
+    view.getByRole('checkbox', { name: copy.diets.vegan }).props.accessibilityState,
+  ).toMatchObject({ checked: true });
+});
+
 test('weekly plan renders seeded meals by day', async () => {
   mockUseApp.mockReturnValue({
     ...mockUseApp(),
@@ -137,6 +189,9 @@ test('weekly plan renders seeded meals by day', async () => {
   const view = await render(<PlanScreen />);
   expect(view.getByText('Monday')).toBeTruthy();
   expect(view.getByText('Greek Yoghurt Protein Oats')).toBeTruthy();
+  expect(
+    view.getByText(copy.meal.contains(formatAllergenList(['milk', 'peanuts', 'gluten']))),
+  ).toBeTruthy();
 });
 
 test('home compares the basket with the saved plan budget', async () => {

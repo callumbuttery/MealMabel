@@ -14,7 +14,7 @@ import {
   Screen,
   SecondaryButton,
 } from '@/components';
-import { copy } from '@/copy';
+import { copy, formatAllergenNote } from '@/copy';
 import type { MockPlanModificationDraft, MockPlanModificationFailure } from '@/services';
 import { spacing } from '@/theme';
 
@@ -112,6 +112,7 @@ export default function AskMabelScreen() {
           {copy.mealTypes[match.meal.type]}
         </AppText>
         <AppText variant="h2">{match.meal.recipe.name}</AppText>
+        <AppText tone="muted">{formatAllergenNote(match.meal.recipe.allergens)}</AppText>
       </Card>
       <MabelInsight title={copy.askMabel.insightTitle}>{copy.askMabel.insightBody}</MabelInsight>
       <View style={styles.chips}>

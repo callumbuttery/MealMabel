@@ -13,11 +13,15 @@ import {
   aggregateHouseholdTargets,
   aggregateIngredientRequirements,
   createHousehold,
+  mergePreferenceAllergens,
   productSelectionKey,
+  requiredHouseholdDiet,
+  stricterDiet,
   syncHouseholdMembers,
 } from '@/domain';
 import type {
   Household,
+  DietType,
   MealSwapRequest,
   PlanRequest,
   RetailerComparison,
@@ -59,8 +63,18 @@ export function createDefaultDraft(
   };
 }
 
-function draftFromHousehold(household: Household): OnboardingDraft {
-  return createDefaultDraft(household.adultCount, household.childCount, household.members);
+function draftFromHousehold(
+  household: Household,
+  fallbackDiet: DietType = 'anything',
+): OnboardingDraft {
+  return createDefaultDraft(
+    household.adultCount,
+    household.childCount,
+    household.members.map((member) => ({
+      ...member,
+      dietType: member.dietType ?? fallbackDiet,
+    })),
+  );
 }
 
 interface AppContextValue {
@@ -96,7 +110,9 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       .then((loaded) => {
         setState(loaded);
         if (loaded.profile?.household) {
-          setOnboardingDraft(draftFromHousehold(loaded.profile.household));
+          setOnboardingDraft(
+            draftFromHousehold(loaded.profile.household, loaded.profile.preferences.dietType),
+          );
         }
       })
       .catch(() => setState(EMPTY_APP_STATE))
@@ -131,6 +147,10 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
     }
     const household = householdFromDraft();
     const targets = aggregateHouseholdTargets(household.members);
+    const dietType = stricterDiet(
+      state.profile.preferences.dietType ?? 'anything',
+      requiredHouseholdDiet(household.members),
+    );
     await persist({
       ...state,
       profile: {
@@ -142,6 +162,9 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
           dailyCalorieTarget: targets.caloriesKcal,
           dailyProteinTargetG: targets.proteinG,
           dailyFibreTargetG: targets.fibreG,
+          dietType,
+          dietaryPreferences: dietType === 'anything' ? ['none'] : [dietType],
+          allergens: mergePreferenceAllergens(state.profile.preferences, household.members),
         },
       },
     });

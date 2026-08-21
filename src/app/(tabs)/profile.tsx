@@ -2,21 +2,15 @@ import { router } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
 
 import { useMealMabelApp } from '@/app-state/app-provider';
-import {
-  AppText,
-  Card,
-  ChoiceChip,
-  Screen,
-  SecondaryButton,
-  SectionHeader,
-} from '@/components';
-import { copy } from '@/copy';
-import { formatNutritionTargets, resolveMemberTargets } from '@/domain';
+import { AppText, Card, ChoiceChip, Screen, SecondaryButton, SectionHeader } from '@/components';
+import { copy, formatAllergenList } from '@/copy';
+import { formatNutritionTargets, householdAllergens, resolveMemberTargets } from '@/domain';
 import { spacing } from '@/theme';
 
 export default function ProfileScreen() {
   const { state, onboardingDraft, clearApp } = useMealMabelApp();
   const preferences = state.profile?.preferences;
+  const notedAllergens = householdAllergens(onboardingDraft.members);
   return (
     <Screen>
       <AppText variant="h1">{copy.profile.title}</AppText>
@@ -40,7 +34,18 @@ export default function ProfileScreen() {
                   : member.displayName}
               </AppText>
               <AppText tone="muted">
-                {copy.household.memberSummary(mode, formatNutritionTargets(targets))}
+                {member.allergens && member.allergens.length > 0
+                  ? copy.household.memberSummaryWithDietAndAllergens(
+                      copy.diets[member.dietType ?? 'anything'],
+                      formatAllergenList(member.allergens),
+                      mode,
+                      formatNutritionTargets(targets),
+                    )
+                  : copy.household.memberSummaryWithDiet(
+                      copy.diets[member.dietType ?? 'anything'],
+                      mode,
+                      formatNutritionTargets(targets),
+                    )}
               </AppText>
             </View>
           );
@@ -57,11 +62,17 @@ export default function ProfileScreen() {
           <ChoiceChip key={goal} label={copy.goals[goal]} selected onPress={() => undefined} />
         ))}
       </View>
-      <SectionHeader title={copy.profile.dislikes} />
+      <SectionHeader title={copy.profile.allergens} />
       <Card>
         <AppText>
-          {preferences?.excludedIngredients.join(', ') || copy.common.noneAdded}
+          {notedAllergens.length > 0
+            ? formatAllergenList(notedAllergens)
+            : copy.household.noAllergens}
         </AppText>
+      </Card>
+      <SectionHeader title={copy.profile.dislikes} />
+      <Card>
+        <AppText>{preferences?.excludedIngredients.join(', ') || copy.common.noneAdded}</AppText>
       </Card>
       <SectionHeader title={copy.profile.supermarkets} />
       <AppText tone="muted">{copy.profile.supermarketList}</AppText>

@@ -1,3 +1,4 @@
+export * from '@/domain/allergens';
 export * from '@/domain/basket-optimizer';
 export * from '@/domain/constraints';
 export * from '@/domain/household';

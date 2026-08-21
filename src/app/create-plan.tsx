@@ -14,7 +14,15 @@ import {
   SectionHeader,
 } from '@/components';
 import { copy } from '@/copy';
-import type { CookingEffort, MealType, RetailerId } from '@/domain';
+import {
+  requiredHouseholdDiet,
+  stricterDiet,
+  type CookingEffort,
+  type DietType,
+  type MealType,
+  type RetailerId,
+} from '@/domain';
+import { DietChips } from '@/features/diet/diet-chips';
 import { spacing } from '@/theme';
 
 const MEALS = Object.keys(copy.mealTypes) as MealType[];
@@ -22,12 +30,18 @@ const RETAILERS = Object.keys(copy.retailers) as RetailerId[];
 const EFFORTS = Object.keys(copy.createPlan.effort) as CookingEffort[];
 
 export default function CreatePlanScreen() {
-  const { state } = useMealMabelApp();
+  const { state, onboardingDraft } = useMealMabelApp();
   const preferences = state.profile?.preferences;
+  const requiredDiet = requiredHouseholdDiet(
+    state.profile?.household?.members ?? onboardingDraft.members,
+  );
   const [budget, setBudget] = useState(String(preferences?.maximumWeeklyBudget ?? 60));
   const [days, setDays] = useState(7);
   const [meals, setMeals] = useState<MealType[]>([...MEALS]);
   const [effort, setEffort] = useState<CookingEffort>(preferences?.cookingEffort ?? 'easy');
+  const [diet, setDiet] = useState<DietType>(
+    stricterDiet(preferences?.dietType ?? 'anything', requiredDiet),
+  );
   const [retailers, setRetailers] = useState<RetailerId[]>(
     preferences?.preferredRetailers.length ? [...preferences.preferredRetailers] : [...RETAILERS],
   );
@@ -46,6 +60,13 @@ export default function CreatePlanScreen() {
         onChangeValue={setBudget}
         helperText={copy.createPlan.budgetHelper}
         error={budget && !valid ? copy.createPlan.validation : undefined}
+      />
+      <DietChips
+        title={copy.createPlan.diet}
+        subtitle={copy.createPlan.dietSubtitle(copy.diets[requiredDiet])}
+        value={diet}
+        requiredDiet={requiredDiet}
+        onChange={setDiet}
       />
       <SectionHeader title={copy.createPlan.meals} />
       <View style={styles.chips}>
@@ -77,7 +98,6 @@ export default function CreatePlanScreen() {
           selected={effort === 'easy'}
           onPress={() => setEffort('easy')}
         />
-        <ChoiceChip label={copy.diets.anything} selected onPress={() => undefined} />
       </View>
       <SectionHeader title={copy.createPlan.cooking} />
       <View style={styles.cards}>
@@ -117,6 +137,7 @@ export default function CreatePlanScreen() {
               meals: meals.join(','),
               retailers: retailers.join(','),
               effort,
+              diet,
             },
           })
         }

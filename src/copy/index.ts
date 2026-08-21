@@ -1,4 +1,5 @@
 import type {
+  AllergenId,
   CookingEffort,
   DietType,
   DietaryRestriction,
@@ -26,6 +27,19 @@ export function formatProteinG(amount: number): string {
 
 export function formatMinutes(amount: number): string {
   return `${amount} min`;
+}
+
+export function formatAllergenList(ids: readonly AllergenId[]): string {
+  const names = ids.map((id) => copy.allergens[id]);
+  if (names.length === 0) return '';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+export function formatAllergenNote(ids: readonly AllergenId[]): string {
+  const list = formatAllergenList(ids);
+  return list ? copy.meal.contains(list) : copy.meal.noAllergens;
 }
 
 export const copy = {
@@ -69,15 +83,22 @@ export const copy = {
   household: {
     title: 'Who are we feeding?',
     intro:
-      'Set a typical diet for anyone you like, or give someone exact calorie, protein and fibre targets.',
+      'Set each person’s diet, allergens and nutrition targets. Mabel will plan meals everyone can eat.',
     adults: 'Adults',
     children: 'Children',
     adultsStepper: 'adults',
     childrenStepper: 'children',
     peopleTitle: 'People',
-    peopleSubtitle: 'Leave someone on a typical diet, or set exact daily targets.',
+    peopleSubtitle:
+      'Set each person’s diet and allergens, then leave them on typical targets or enter exact numbers.',
     name: 'Name',
-    typicalDiet: 'Typical diet',
+    diet: 'Diet',
+    dietHelper:
+      'Anything, vegetarian, vegan or pescatarian. Shared meals follow the strictest diet in the household.',
+    allergens: 'Allergens',
+    allergensHelper:
+      'Note anything this person cannot eat. Shared meals avoid every allergen in the household.',
+    typicalDiet: 'Typical targets',
     customTargets: 'Custom targets',
     customShort: 'Custom',
     weight: 'Weight (optional)',
@@ -89,6 +110,15 @@ export const copy = {
       `${kcal} kcal · ${protein}g protein · ${fibre}g fibre`,
     typicalSummary: (summary: string) => `Typical: ${summary}`,
     memberSummary: (mode: string, summary: string) => `${mode} · ${summary}`,
+    memberSummaryWithDiet: (diet: string, mode: string, summary: string) =>
+      `${diet} · ${mode} · ${summary}`,
+    memberSummaryWithDietAndAllergens: (
+      diet: string,
+      allergens: string,
+      mode: string,
+      summary: string,
+    ) => `${diet} · Avoids ${allergens} · ${mode} · ${summary}`,
+    noAllergens: 'No allergens noted',
     nameWithWeight: (name: string, weightKg: number) => `${name} · ${weightKg}kg`,
     adultPlaceholder: 'Adult 1',
     childPlaceholder: 'Child 1',
@@ -105,16 +135,19 @@ export const copy = {
   preferences: {
     title: 'What matters to you?',
     diet: 'Diet',
-    dietSubtitle: 'Choose one',
+    dietSubtitle: 'Anything, vegetarian, vegan or pescatarian.',
     goals: 'Goals',
     goalsSubtitle: 'Choose as many as you like',
     restrictions: 'Dietary restrictions',
+    allergens: 'Allergens',
+    allergensSubtitle: 'Note anything the household must avoid. This includes each person’s notes.',
     dislikesQuestion: "Anything you don't eat?",
     dislikesLabel: 'Disliked foods',
     dislikesPlaceholder: 'Mushrooms, tuna, olives...',
     finish: 'Finish setup',
     defaultDislikes: 'Mushrooms',
   },
+  dietsHeading: 'Diet',
   diets: {
     anything: 'Anything',
     vegetarian: 'Vegetarian',
@@ -134,6 +167,22 @@ export const copy = {
     gluten_free: 'Gluten free',
     egg_free: 'Egg free',
   } satisfies Record<DietaryRestriction, string>,
+  allergens: {
+    celery: 'Celery',
+    gluten: 'Gluten',
+    crustaceans: 'Crustaceans',
+    eggs: 'Eggs',
+    fish: 'Fish',
+    lupin: 'Lupin',
+    milk: 'Milk',
+    molluscs: 'Molluscs',
+    mustard: 'Mustard',
+    nuts: 'Tree nuts',
+    peanuts: 'Peanuts',
+    sesame: 'Sesame',
+    soya: 'Soya',
+    sulphites: 'Sulphites',
+  } satisfies Record<AllergenId, string>,
   mealTypes: {
     breakfast: 'Breakfast',
     lunch: 'Lunch',
@@ -178,6 +227,11 @@ export const copy = {
     daysOption: (count: number) => `${count} days`,
     priorities: 'Priorities',
     lowEffort: 'Low effort',
+    diet: 'Diet',
+    dietSubtitle: (requiredDiet: string) =>
+      requiredDiet === 'Anything'
+        ? 'Anything, vegetarian, vegan or pescatarian for this week’s meals.'
+        : `Your household needs ${requiredDiet.toLowerCase()} meals or stricter.`,
     cooking: 'Cooking effort',
     shops: 'Where could you shop?',
     cta: 'Let Mabel plan it',
@@ -208,6 +262,10 @@ export const copy = {
     missingPreferences: 'Your preferences could not be loaded.',
     failed: "I couldn't finish that plan. Your preferences are safe — give me another go.",
     retryTitle: "Let's try that again",
+    safeFailureTitle: "I won't break your food rules",
+    safeFailure: (mealTypes: string) =>
+      `I couldn't find a safe ${mealTypes} in the demo recipes. Go back and choose a different set of meals.`,
+    changeChoices: 'Change plan choices',
   },
   plan: {
     title: 'Your week',
@@ -242,6 +300,9 @@ export const copy = {
     time: 'Time',
     ingredients: 'Ingredients',
     method: 'Method',
+    allergens: 'Allergens',
+    contains: (list: string) => `Contains ${list}.`,
+    noAllergens: 'No listed allergens',
     swap: 'Swap this meal',
     ask: 'Ask Mabel',
     swapTitle: 'Swap this for…',
@@ -374,6 +435,7 @@ export const copy = {
     defaultName: 'You',
     household: 'Household',
     dietGoals: 'Diet & goals',
+    allergens: 'Allergens',
     dislikes: 'Dislikes',
     supermarkets: 'Supermarkets',
     supermarketList: "Tesco · Asda · Sainsbury's",

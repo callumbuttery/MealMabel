@@ -14,22 +14,26 @@ import {
 } from '@/components';
 import {
   aggregateHouseholdTargets,
-  type DietType,
+  expandAllergenCodes,
+  householdAllergens,
+  requiredHouseholdDiet,
   type DietaryPreference,
   type DietaryRestriction,
+  type DietType,
   type NutritionGoal,
   type UserProfile,
 } from '@/domain';
-import { copy } from '@/copy';
+import { DietChips } from '@/features/diet/diet-chips';
+import { copy, formatAllergenList } from '@/copy';
 import { spacing } from '@/theme';
 
-const DIETS = Object.keys(copy.diets) as DietType[];
 const GOALS = Object.keys(copy.goals) as NutritionGoal[];
 const RESTRICTIONS = Object.keys(copy.restrictions) as DietaryRestriction[];
 
 export default function PreferencesScreen() {
   const { onboardingDraft, completeOnboarding } = useMealMabelApp();
-  const [diet, setDiet] = useState<DietType>('anything');
+  const requiredDiet = requiredHouseholdDiet(onboardingDraft.members);
+  const [diet, setDiet] = useState<DietType>(requiredDiet);
   const [goals, setGoals] = useState<NutritionGoal[]>(['high_protein']);
   const [restrictions, setRestrictions] = useState<DietaryRestriction[]>([]);
   const [dislikes, setDislikes] = useState<string>(copy.preferences.defaultDislikes);
@@ -41,8 +45,9 @@ export default function PreferencesScreen() {
   const finish = async () => {
     setSaving(true);
     const now = new Date().toISOString();
-    const dietaryPreferences: DietaryPreference[] =
-      diet === 'anything' ? ['none'] : [diet];
+    const householdDiet = requiredHouseholdDiet(onboardingDraft.members);
+    const dietType = diet === 'anything' ? householdDiet : diet;
+    const dietaryPreferences: DietaryPreference[] = dietType === 'anything' ? ['none'] : [dietType];
     const householdTargets = aggregateHouseholdTargets(onboardingDraft.members);
     const profile: UserProfile = {
       id: 'local-user',
@@ -51,7 +56,7 @@ export default function PreferencesScreen() {
       createdAt: now,
       updatedAt: now,
       preferences: {
-        dietType: diet,
+        dietType,
         nutritionGoals: goals,
         dietaryRestrictions: restrictions,
         cookingEffort: 'easy',
@@ -60,7 +65,10 @@ export default function PreferencesScreen() {
           .split(',')
           .map((item) => item.trim())
           .filter(Boolean),
-        allergens: restrictions,
+        allergens: expandAllergenCodes([
+          ...householdAllergens(onboardingDraft.members),
+          ...restrictions,
+        ]),
         dailyCalorieTarget: householdTargets.caloriesKcal,
         dailyProteinTargetG: householdTargets.proteinG,
         dailyFibreTargetG: householdTargets.fibreG,
@@ -76,17 +84,13 @@ export default function PreferencesScreen() {
   return (
     <Screen>
       <AppHeader title={copy.preferences.title} onBack={() => router.back()} />
-      <SectionHeader title={copy.preferences.diet} subtitle={copy.preferences.dietSubtitle} />
-      <View style={styles.chips}>
-        {DIETS.map((value) => (
-          <ChoiceChip
-            key={value}
-            label={copy.diets[value]}
-            selected={diet === value}
-            onPress={() => setDiet(value)}
-          />
-        ))}
-      </View>
+      <DietChips
+        title={copy.preferences.diet}
+        subtitle={copy.preferences.dietSubtitle}
+        value={diet}
+        requiredDiet={requiredDiet}
+        onChange={setDiet}
+      />
       <SectionHeader title={copy.preferences.goals} subtitle={copy.preferences.goalsSubtitle} />
       <View style={styles.chips}>
         {GOALS.map((value) => (
@@ -98,6 +102,15 @@ export default function PreferencesScreen() {
           />
         ))}
       </View>
+      <SectionHeader
+        title={copy.preferences.allergens}
+        subtitle={copy.preferences.allergensSubtitle}
+      />
+      <AppText tone="muted" style={styles.noted}>
+        {householdAllergens(onboardingDraft.members).length > 0
+          ? formatAllergenList(householdAllergens(onboardingDraft.members))
+          : copy.household.noAllergens}
+      </AppText>
       <SectionHeader title={copy.preferences.restrictions} />
       <View style={styles.chips}>
         {RESTRICTIONS.map((value) => (
@@ -123,4 +136,5 @@ export default function PreferencesScreen() {
 
 const styles = StyleSheet.create({
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.xl },
+  noted: { marginBottom: spacing.xl },
 });

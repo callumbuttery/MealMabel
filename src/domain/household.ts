@@ -1,6 +1,7 @@
 import { copy } from '@/copy';
 import type {
   DailyNutritionTargets,
+  DietType,
   Household,
   HouseholdMember,
   HouseholdMemberKind,
@@ -18,16 +19,37 @@ export const TYPICAL_CHILD_TARGETS: DailyNutritionTargets = {
   fibreG: 20,
 };
 
-export function createHouseholdMember(
-  kind: HouseholdMemberKind,
-  index: number,
-): HouseholdMember {
+const DIET_STRICTNESS: Record<DietType, number> = {
+  anything: 0,
+  pescatarian: 1,
+  vegetarian: 2,
+  vegan: 3,
+};
+
+export function createHouseholdMember(kind: HouseholdMemberKind, index: number): HouseholdMember {
   return {
     id: `${kind}-${index}`,
     displayName: copy.household.defaultName(kind, index),
     kind,
+    dietType: 'anything',
+    allergens: [],
     nutritionMode: 'typical',
   };
+}
+
+export function stricterDiet(left: DietType, right: DietType): DietType {
+  return DIET_STRICTNESS[left] >= DIET_STRICTNESS[right] ? left : right;
+}
+
+export function requiredHouseholdDiet(members: readonly HouseholdMember[]): DietType {
+  return members.reduce(
+    (required, member) => stricterDiet(required, member.dietType ?? 'anything'),
+    'anything' as DietType,
+  );
+}
+
+export function dietMeetsHouseholdDiet(diet: DietType, requiredDiet: DietType): boolean {
+  return DIET_STRICTNESS[diet] >= DIET_STRICTNESS[requiredDiet];
 }
 
 export function syncHouseholdMembers(

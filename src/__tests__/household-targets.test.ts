@@ -1,9 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
+import { householdAllergens } from '@/domain/allergens';
 import {
   aggregateHouseholdTargets,
   createHousehold,
   createHouseholdMember,
+  dietMeetsHouseholdDiet,
+  requiredHouseholdDiet,
   resolveMemberTargets,
   syncHouseholdMembers,
   TYPICAL_ADULT_TARGETS,
@@ -16,6 +19,29 @@ describe('household nutrition targets', () => {
     expect(members).toHaveLength(2);
     expect(resolveMemberTargets(members[0])).toEqual(TYPICAL_ADULT_TARGETS);
     expect(members[1].kind).toBe('child');
+    expect(members.every((member) => member.dietType === 'anything')).toBe(true);
+  });
+
+  it('uses the strictest person diet for shared meals', () => {
+    const members: HouseholdMember[] = [
+      { ...createHouseholdMember('adult', 1), dietType: 'pescatarian' },
+      { ...createHouseholdMember('adult', 2), dietType: 'vegetarian' },
+    ];
+
+    expect(requiredHouseholdDiet(members)).toBe('vegetarian');
+    expect(dietMeetsHouseholdDiet('anything', 'vegetarian')).toBe(false);
+    expect(dietMeetsHouseholdDiet('pescatarian', 'vegetarian')).toBe(false);
+    expect(dietMeetsHouseholdDiet('vegetarian', 'vegetarian')).toBe(true);
+    expect(dietMeetsHouseholdDiet('vegan', 'vegetarian')).toBe(true);
+  });
+
+  it('unions each person’s allergens for shared meals', () => {
+    const members: HouseholdMember[] = [
+      { ...createHouseholdMember('adult', 1), allergens: ['milk', 'eggs'] },
+      { ...createHouseholdMember('adult', 2), allergens: ['peanuts', 'milk'] },
+    ];
+
+    expect(householdAllergens(members)).toEqual(['eggs', 'milk', 'peanuts']);
   });
 
   it('keeps custom targets when household size changes', () => {

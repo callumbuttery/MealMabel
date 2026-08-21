@@ -1,3 +1,4 @@
+import { blockedAllergensForPreferences } from '@/domain/allergens';
 import type { PlanModificationRequest, Recipe, UserPreferences, WeeklyPlan } from '@/domain/models';
 import { SEEDED_RECIPES } from '@/fixtures/recipes';
 
@@ -41,13 +42,6 @@ const STOP_WORDS = new Set([
   'with',
 ]);
 
-const RESTRICTION_ALLERGENS: Record<string, string[]> = {
-  nut_free: ['nuts', 'peanuts'],
-  dairy_free: ['milk'],
-  gluten_free: ['gluten'],
-  egg_free: ['eggs'],
-};
-
 function normalise(value: string): string {
   return value.trim().toLowerCase();
 }
@@ -89,16 +83,8 @@ function recipeMatchesDiet(recipe: Recipe, preferences: UserPreferences): boolea
 function recipeIsSafe(recipe: Recipe, preferences: UserPreferences): boolean {
   if (!recipeMatchesDiet(recipe, preferences)) return false;
 
-  const restrictionIds = [...(preferences.dietaryRestrictions ?? []), ...preferences.allergens].map(
-    normalise,
-  );
-  const blockedAllergens = new Set(
-    restrictionIds.flatMap((restriction) => [
-      restriction,
-      ...(RESTRICTION_ALLERGENS[restriction] ?? []),
-    ]),
-  );
-  if (recipe.allergens.some((allergen) => blockedAllergens.has(normalise(allergen)))) {
+  const blockedAllergens = new Set(blockedAllergensForPreferences(preferences));
+  if (recipe.allergens.some((allergen) => blockedAllergens.has(allergen))) {
     return false;
   }
 

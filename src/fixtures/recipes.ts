@@ -1,4 +1,5 @@
 import type {
+  AllergenId,
   IngredientUnit,
   MealType,
   NutritionSummary,
@@ -37,7 +38,7 @@ interface RecipeSeed {
   ingredients: RecipeIngredient[];
   nutrition: NutritionSummary;
   tags: string[];
-  allergens?: string[];
+  allergens?: AllergenId[];
 }
 
 const recipe = (seed: RecipeSeed): Recipe => ({
@@ -76,6 +77,22 @@ export const SEEDED_RECIPES: Recipe[] = [
     nutrition: nutrition(438, 29, 54, 12, 9),
     tags: ['vegetarian', 'meal-prep'],
     allergens: ['milk', 'peanuts', 'gluten'],
+  }),
+  recipe({
+    id: 'banana-berry-oats',
+    name: 'Banana & Berry Overnight Oats',
+    description: 'Creamy oat pots with banana and mixed berries.',
+    mealTypes: ['breakfast'],
+    prep: 8,
+    cook: 0,
+    ingredients: [
+      ingredient('oats', 'Rolled oats', 120, 'g'),
+      ingredient('banana', 'Bananas', 2, 'each'),
+      ingredient('berries', 'Frozen mixed berries', 160, 'g'),
+    ],
+    nutrition: nutrition(390, 13, 72, 6, 11),
+    tags: ['vegan', 'meal-prep', 'quick'],
+    allergens: ['gluten'],
   }),
   recipe({
     id: 'egg-spinach-toast',
@@ -178,6 +195,22 @@ export const SEEDED_RECIPES: Recipe[] = [
     nutrition: nutrition(465, 35, 54, 11, 16),
     tags: ['vegetarian'],
     allergens: ['milk'],
+  }),
+  recipe({
+    id: 'chickpea-rice-bowl',
+    name: 'Chickpea & Pepper Rice Bowl',
+    description: 'A colourful chickpea bowl with brown rice and greens.',
+    mealTypes: ['lunch', 'dinner'],
+    prep: 10,
+    cook: 20,
+    ingredients: [
+      ingredient('chickpeas', 'Chickpeas', 240, 'g'),
+      ingredient('brown-rice', 'Brown rice', 150, 'g'),
+      ingredient('peppers', 'Mixed peppers', 200, 'g'),
+      ingredient('spinach', 'Baby spinach', 100, 'g'),
+    ],
+    nutrition: nutrition(510, 20, 87, 9, 17),
+    tags: ['vegan', 'balanced'],
   }),
   recipe({
     id: 'chicken-pesto-pasta',

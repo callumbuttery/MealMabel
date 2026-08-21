@@ -1,9 +1,5 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import React, {
-  useEffect,
-  useState,
-  type ReactNode,
-} from "react";
+import Ionicons from '@expo/vector-icons/Ionicons';
+import React, { useEffect, useState, type ReactNode } from 'react';
 import {
   AccessibilityInfo,
   Animated,
@@ -22,8 +18,8 @@ import {
   View,
   type ViewProps,
   type ViewStyle,
-} from "react-native";
-import { SafeAreaView, type Edge } from "react-native-safe-area-context";
+} from 'react-native';
+import { SafeAreaView, type Edge } from 'react-native-safe-area-context';
 
 import {
   colors,
@@ -34,22 +30,17 @@ import {
   typography,
   useMealMabelTheme,
   type TypographyToken,
-} from "@/theme";
-import { copy } from "@/copy";
+} from '@/theme';
+import { copy } from '@/copy';
 
-type IconName = React.ComponentProps<typeof Ionicons>["name"];
+type IconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export type AppTextProps = TextProps & {
   variant?: TypographyToken;
-  tone?: "default" | "muted" | "primary" | "danger" | "inverse";
+  tone?: 'default' | 'muted' | 'primary' | 'danger' | 'inverse';
 };
 
-export function AppText({
-  variant = "body",
-  tone = "default",
-  style,
-  ...props
-}: AppTextProps) {
+export function AppText({ variant = 'body', tone = 'default', style, ...props }: AppTextProps) {
   const theme = useMealMabelTheme();
   const color = {
     default: theme.text,
@@ -59,13 +50,7 @@ export function AppText({
     inverse: theme.primaryContrast,
   }[tone];
 
-  return (
-    <Text
-      allowFontScaling
-      style={[typography[variant], { color }, style]}
-      {...props}
-    />
-  );
+  return <Text allowFontScaling style={[typography[variant], { color }, style]} {...props} />;
 }
 
 export type ScreenProps = ViewProps & {
@@ -78,15 +63,13 @@ export type ScreenProps = ViewProps & {
 export function Screen({
   children,
   scroll = true,
-  edges = ["top", "right", "bottom", "left"],
+  edges = ['top', 'right', 'bottom', 'left'],
   style,
   contentStyle,
   ...props
 }: ScreenProps) {
   const theme = useMealMabelTheme();
-  const content = (
-    <View style={[styles.screenContent, contentStyle]}>{children}</View>
-  );
+  const content = <View style={[styles.screenContent, contentStyle]}>{children}</View>;
 
   return (
     <SafeAreaView
@@ -129,12 +112,7 @@ export function AppHeader({ title, subtitle, onBack, action }: AppHeaderProps) {
           {title}
         </AppText>
         {subtitle ? (
-          <AppText
-            variant="caption"
-            tone="muted"
-            numberOfLines={2}
-            style={styles.headerTitle}
-          >
+          <AppText variant="caption" tone="muted" numberOfLines={2} style={styles.headerTitle}>
             {subtitle}
           </AppText>
         ) : null}
@@ -198,7 +176,7 @@ function Button({
               color={secondary ? theme.primary : theme.primaryContrast}
             />
           ) : null}
-          <AppText variant="button" tone={secondary ? "primary" : "inverse"}>
+          <AppText variant="button" tone={secondary ? 'primary' : 'inverse'}>
             {label}
           </AppText>
         </>
@@ -220,7 +198,7 @@ export type IconButtonProps = {
   label: string;
   onPress: () => void;
   disabled?: boolean;
-  size?: "small" | "medium";
+  size?: 'small' | 'medium';
 };
 
 export function IconButton({
@@ -228,10 +206,10 @@ export function IconButton({
   label,
   onPress,
   disabled = false,
-  size = "medium",
+  size = 'medium',
 }: IconButtonProps) {
   const theme = useMealMabelTheme();
-  const dimension = size === "small" ? layout.minTouchTarget : 48;
+  const dimension = size === 'small' ? layout.minTouchTarget : 48;
   return (
     <Pressable
       accessibilityRole="button"
@@ -251,11 +229,7 @@ export function IconButton({
         },
       ]}
     >
-      <Ionicons
-        name={icon}
-        size={size === "small" ? 20 : 23}
-        color={theme.text}
-      />
+      <Ionicons name={icon} size={size === 'small' ? 20 : 23} color={theme.text} />
     </Pressable>
   );
 }
@@ -265,12 +239,7 @@ export type CardProps = ViewProps & {
   bordered?: boolean;
 };
 
-export function Card({
-  elevated = false,
-  bordered = false,
-  style,
-  ...props
-}: CardProps) {
+export function Card({ elevated = false, bordered = false, style, ...props }: CardProps) {
   const theme = useMealMabelTheme();
   return (
     <View
@@ -279,7 +248,7 @@ export function Card({
         bordered ? shadows.none : elevated ? shadows.md : shadows.sm,
         {
           backgroundColor: theme.surface,
-          borderColor: bordered ? theme.border : "transparent",
+          borderColor: bordered ? theme.border : 'transparent',
           borderWidth: bordered ? 2 : 0,
         },
         style,
@@ -296,12 +265,7 @@ export type SectionHeaderProps = {
   onAction?: () => void;
 };
 
-export function SectionHeader({
-  title,
-  subtitle,
-  actionLabel,
-  onAction,
-}: SectionHeaderProps) {
+export function SectionHeader({ title, subtitle, actionLabel, onAction }: SectionHeaderProps) {
   return (
     <View style={styles.sectionHeader}>
       <View style={styles.flex}>
@@ -332,12 +296,7 @@ export type ChoiceChipProps = {
   disabled?: boolean;
 };
 
-export function ChoiceChip({
-  label,
-  selected,
-  onPress,
-  disabled = false,
-}: ChoiceChipProps) {
+export function ChoiceChip({ label, selected, onPress, disabled = false }: ChoiceChipProps) {
   const theme = useMealMabelTheme();
   return (
     <Pressable
@@ -355,13 +314,8 @@ export function ChoiceChip({
         },
       ]}
     >
-      {selected ? (
-        <Ionicons name="checkmark-circle" color={theme.accentDark} size={16} />
-      ) : null}
-      <AppText
-        variant="label"
-        style={selected ? { color: theme.accentDark } : undefined}
-      >
+      {selected ? <Ionicons name="checkmark-circle" color={theme.accentDark} size={16} /> : null}
+      <AppText variant="label" style={selected ? { color: theme.accentDark } : undefined}>
         {label}
       </AppText>
     </Pressable>
@@ -393,10 +347,7 @@ export function NumberStepper({
       accessibilityRole="adjustable"
       accessibilityLabel={label}
       accessibilityValue={{ min, max, now: value, text: String(value) }}
-      style={[
-        styles.stepper,
-        { borderColor: theme.border, backgroundColor: theme.surface },
-      ]}
+      style={[styles.stepper, { borderColor: theme.border, backgroundColor: theme.surface }]}
     >
       <StepperButton
         icon="remove"
@@ -486,11 +437,7 @@ export function AppTextInput({
         {...props}
       />
       {error ? (
-        <AppText
-          variant="caption"
-          tone="danger"
-          accessibilityLiveRegion="polite"
-        >
+        <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
           {error}
         </AppText>
       ) : helperText ? (
@@ -504,7 +451,7 @@ export function AppTextInput({
 
 export type CurrencyInputProps = Omit<
   AppTextInputProps,
-  "value" | "onChangeText" | "keyboardType"
+  'value' | 'onChangeText' | 'keyboardType'
 > & {
   value: string;
   onChangeValue: (value: string) => void;
@@ -514,7 +461,7 @@ export type CurrencyInputProps = Omit<
 export function CurrencyInput({
   value,
   onChangeValue,
-  currencySymbol = "£",
+  currencySymbol = '£',
   label,
   error,
   helperText,
@@ -546,18 +493,12 @@ export function CurrencyInput({
           placeholderTextColor={theme.textMuted}
           selectionColor={theme.primary}
           value={value}
-          onChangeText={(next) =>
-            onChangeValue(next.replace(/[^0-9.,]/g, "").replace(",", "."))
-          }
+          onChangeText={(next) => onChangeValue(next.replace(/[^0-9.,]/g, '').replace(',', '.'))}
           style={[styles.currencyInput, { color: theme.text }, style]}
         />
       </View>
       {error ? (
-        <AppText
-          variant="caption"
-          tone="danger"
-          accessibilityLiveRegion="polite"
-        >
+        <AppText variant="caption" tone="danger" accessibilityLiveRegion="polite">
           {error}
         </AppText>
       ) : helperText ? (
@@ -569,25 +510,17 @@ export function CurrencyInput({
   );
 }
 
-export type SearchInputProps = Omit<TextInputProps, "style"> & {
+export type SearchInputProps = Omit<TextInputProps, 'style'> & {
   label?: string;
   onClear?: () => void;
 };
 
-export function SearchInput({
-  label = "Search",
-  value,
-  onClear,
-  ...props
-}: SearchInputProps) {
+export function SearchInput({ label = 'Search', value, onClear, ...props }: SearchInputProps) {
   const theme = useMealMabelTheme();
-  const hasValue = typeof value === "string" && value.length > 0;
+  const hasValue = typeof value === 'string' && value.length > 0;
   return (
     <View
-      style={[
-        styles.searchShell,
-        { backgroundColor: theme.surface, borderColor: theme.border },
-      ]}
+      style={[styles.searchShell, { backgroundColor: theme.surface, borderColor: theme.border }]}
     >
       <Ionicons name="search" size={21} color={theme.textMuted} />
       <TextInput
@@ -647,6 +580,7 @@ export type MealCardProps = {
   selected?: boolean;
   onPress?: () => void;
   badge?: string;
+  note?: string;
 };
 
 export function MealCard({
@@ -658,23 +592,16 @@ export function MealCard({
   selected = false,
   onPress,
   badge,
+  note,
 }: MealCardProps) {
   const theme = useMealMabelTheme();
   const card = (
     <Card
       elevated
-      accessibilityLabel={[
-        title,
-        time,
-        cost,
-        servings ? `${servings} servings` : undefined,
-      ]
+      accessibilityLabel={[title, time, cost, servings ? `${servings} servings` : undefined, note]
         .filter(Boolean)
-        .join(", ")}
-      style={[
-        styles.mealCard,
-        selected && { borderColor: theme.accent, borderWidth: 2 },
-      ]}
+        .join(', ')}
+      style={[styles.mealCard, selected && { borderColor: theme.accent, borderWidth: 2 }]}
     >
       <View style={[styles.mealImage, { backgroundColor: theme.surfaceMuted }]}>
         {image ? (
@@ -690,14 +617,8 @@ export function MealCard({
           </View>
         ) : null}
         {selected ? (
-          <View
-            style={[styles.selectedBadge, { backgroundColor: theme.accent }]}
-          >
-            <Ionicons
-              name="checkmark"
-              size={18}
-              color={theme.primaryContrast}
-            />
+          <View style={[styles.selectedBadge, { backgroundColor: theme.accent }]}>
+            <Ionicons name="checkmark" size={18} color={theme.primaryContrast} />
           </View>
         ) : null}
       </View>
@@ -707,11 +628,14 @@ export function MealCard({
         </AppText>
         <View style={styles.metaRow}>
           {time ? <Meta icon="time-outline" text={time} /> : null}
-          {servings ? (
-            <Meta icon="people-outline" text={String(servings)} />
-          ) : null}
+          {servings ? <Meta icon="people-outline" text={String(servings)} /> : null}
           {cost ? <Meta icon="wallet-outline" text={cost} /> : null}
         </View>
+        {note ? (
+          <AppText variant="caption" tone="muted">
+            {note}
+          </AppText>
+        ) : null}
       </View>
     </Card>
   );
@@ -749,11 +673,7 @@ export type BudgetProgressProps = {
   currencySymbol?: string;
 };
 
-export function BudgetProgress({
-  spent,
-  budget,
-  currencySymbol = "£",
-}: BudgetProgressProps) {
+export function BudgetProgress({ spent, budget, currencySymbol = '£' }: BudgetProgressProps) {
   const theme = useMealMabelTheme();
   const ratio = budget > 0 ? Math.min(Math.max(spent / budget, 0), 1) : 0;
   const over = spent > budget;
@@ -773,15 +693,13 @@ export function BudgetProgress({
         <AppText variant="label">
           {over ? copy.components.overBudget : copy.components.weeklyBudget}
         </AppText>
-        <AppText variant="label" tone={over ? "danger" : "default"}>
+        <AppText variant="label" tone={over ? 'danger' : 'default'}>
           {currencySymbol}
           {spent.toFixed(2)} / {currencySymbol}
           {budget.toFixed(2)}
         </AppText>
       </View>
-      <View
-        style={[styles.progressTrack, { backgroundColor: theme.surfaceMuted }]}
-      >
+      <View style={[styles.progressTrack, { backgroundColor: theme.surfaceMuted }]}>
         <View
           style={[
             styles.progressFill,
@@ -792,12 +710,10 @@ export function BudgetProgress({
           ]}
         />
       </View>
-      <AppText variant="caption" tone={over ? "danger" : "muted"}>
+      <AppText variant="caption" tone={over ? 'danger' : 'muted'}>
         {over
           ? copy.components.overBy(`${currencySymbol}${(spent - budget).toFixed(2)}`)
-          : copy.components.remaining(
-              `${currencySymbol}${Math.max(budget - spent, 0).toFixed(2)}`,
-            )}
+          : copy.components.remaining(`${currencySymbol}${Math.max(budget - spent, 0).toFixed(2)}`)}
       </AppText>
     </View>
   );
@@ -815,7 +731,7 @@ export function RetailerLogo({ name, size = 48, color }: RetailerLogoProps) {
     .split(/\s+/)
     .slice(0, 2)
     .map((word) => word.charAt(0))
-    .join("")
+    .join('')
     .toUpperCase();
   return (
     <View
@@ -831,10 +747,7 @@ export function RetailerLogo({ name, size = 48, color }: RetailerLogoProps) {
         },
       ]}
     >
-      <AppText
-        variant="label"
-        style={{ color: color ? theme.primaryContrast : theme.textMuted }}
-      >
+      <AppText variant="label" style={{ color: color ? theme.primaryContrast : theme.textMuted }}>
         {initials}
       </AppText>
     </View>
@@ -864,7 +777,7 @@ export function RetailerCard({
   return (
     <Pressable
       accessibilityRole="radio"
-      accessibilityLabel={`${name}, ${price}${bestValue ? copy.components.bestValueSuffix : ""}`}
+      accessibilityLabel={`${name}, ${price}${bestValue ? copy.components.bestValueSuffix : ''}`}
       accessibilityState={{ selected }}
       disabled={!onPress}
       onPress={onPress}
@@ -872,8 +785,7 @@ export function RetailerCard({
         styles.retailerCard,
         shadows.sm,
         {
-          backgroundColor:
-            selected || bestValue ? theme.accentSoft : theme.surface,
+          backgroundColor: selected || bestValue ? theme.accentSoft : theme.surface,
           borderColor: selected || bestValue ? theme.accent : theme.border,
           opacity: pressed ? 0.75 : 1,
         },
@@ -884,14 +796,8 @@ export function RetailerCard({
         <View style={styles.inline}>
           <AppText variant="bodyStrong">{name}</AppText>
           {bestValue ? (
-            <View
-              style={[styles.valueBadge, { backgroundColor: theme.accent }]}
-            >
-              <Ionicons
-                name="sparkles"
-                size={13}
-                color={theme.primaryContrast}
-              />
+            <View style={[styles.valueBadge, { backgroundColor: theme.accent }]}>
+              <Ionicons name="sparkles" size={13} color={theme.primaryContrast} />
               <AppText variant="caption" tone="inverse">
                 {copy.components.bestValue}
               </AppText>
@@ -905,9 +811,7 @@ export function RetailerCard({
         ) : null}
       </View>
       <AppText variant="h3">{price}</AppText>
-      {selected ? (
-        <Ionicons name="checkmark-circle" size={22} color={theme.accent} />
-      ) : null}
+      {selected ? <Ionicons name="checkmark-circle" size={22} color={theme.accent} /> : null}
     </Pressable>
   );
 }
@@ -924,10 +828,7 @@ export type PriceComparisonCardProps = {
   offers: PriceOffer[];
 };
 
-export function PriceComparisonCard({
-  itemName,
-  offers,
-}: PriceComparisonCardProps) {
+export function PriceComparisonCard({ itemName, offers }: PriceComparisonCardProps) {
   const theme = useMealMabelTheme();
   return (
     <Card style={styles.comparisonCard}>
@@ -952,9 +853,7 @@ export function PriceComparisonCard({
               </AppText>
             ) : null}
           </View>
-          {offer.best ? (
-            <Ionicons name="checkmark-circle" size={20} color={theme.accent} />
-          ) : null}
+          {offer.best ? <Ionicons name="checkmark-circle" size={20} color={theme.accent} /> : null}
           <AppText variant="bodyStrong">{offer.price}</AppText>
         </View>
       ))}
@@ -984,7 +883,7 @@ export function ShoppingListItemRow({
     <View style={[styles.shoppingRow, { borderBottomColor: theme.border }]}>
       <Pressable
         accessibilityRole="checkbox"
-        accessibilityLabel={`${name}${quantity ? `, ${quantity}` : ""}`}
+        accessibilityLabel={`${name}${quantity ? `, ${quantity}` : ''}`}
         accessibilityState={{ checked }}
         hitSlop={6}
         onPress={onToggle}
@@ -996,19 +895,17 @@ export function ShoppingListItemRow({
           },
         ]}
       >
-        {checked ? (
-          <Ionicons name="checkmark" size={19} color={theme.primaryContrast} />
-        ) : null}
+        {checked ? <Ionicons name="checkmark" size={19} color={theme.primaryContrast} /> : null}
       </Pressable>
       <Pressable
-        accessibilityRole={onPress ? "button" : undefined}
+        accessibilityRole={onPress ? 'button' : undefined}
         disabled={!onPress}
         onPress={onPress}
         style={styles.shoppingCopy}
       >
         <AppText
           variant="bodyStrong"
-          tone={checked ? "muted" : "default"}
+          tone={checked ? 'muted' : 'default'}
           style={checked ? styles.strikethrough : undefined}
         >
           {name}
@@ -1020,7 +917,7 @@ export function ShoppingListItemRow({
         ) : null}
       </Pressable>
       {price ? (
-        <AppText variant="label" tone={checked ? "muted" : "default"}>
+        <AppText variant="label" tone={checked ? 'muted' : 'default'}>
           {price}
         </AppText>
       ) : null}
@@ -1038,11 +935,7 @@ export type ShoppingCategoryProps = {
   children: ReactNode;
 };
 
-export function ShoppingCategory({
-  title,
-  count,
-  children,
-}: ShoppingCategoryProps) {
+export function ShoppingCategory({ title, count, children }: ShoppingCategoryProps) {
   return (
     <View style={styles.shoppingCategory}>
       <View style={styles.categoryHeader}>
@@ -1210,19 +1103,12 @@ export function MabelInsight({
   return (
     <View
       accessibilityRole="summary"
-      style={[
-        styles.insight,
-        { backgroundColor: theme.warningSoft, borderColor: theme.warning },
-      ]}
+      style={[styles.insight, { backgroundColor: theme.warningSoft, borderColor: theme.warning }]}
     >
-      {badgeLabel ? (
-        <Badge label={badgeLabel} />
-      ) : (
-        <MabelAvatar size={52} />
-      )}
+      {badgeLabel ? <Badge label={badgeLabel} /> : <MabelAvatar size={52} />}
       <View style={styles.flex}>
         {badgeLabel ? null : <AppText variant="label">{title}</AppText>}
-        {typeof children === "string" ? (
+        {typeof children === 'string' ? (
           <AppText>
             {badgeLabel ? <AppText variant="bodyStrong">{title} </AppText> : null}
             {children}
@@ -1266,7 +1152,7 @@ export function Blob({
   bottom,
   left,
   right,
-  rotate = "0deg",
+  rotate = '0deg',
   opacity = 0.9,
 }: BlobProps) {
   return (
@@ -1296,20 +1182,17 @@ export function Blob({
 
 export type BadgeProps = {
   label: string;
-  tone?: "warning" | "accent";
+  tone?: 'warning' | 'accent';
 };
 
-export function Badge({ label, tone = "warning" }: BadgeProps) {
+export function Badge({ label, tone = 'warning' }: BadgeProps) {
   const theme = useMealMabelTheme();
-  const backgroundColor = tone === "warning" ? theme.warning : theme.accent;
-  const color = tone === "warning" ? colors.cocoa : theme.primaryContrast;
+  const backgroundColor = tone === 'warning' ? theme.warning : theme.accent;
+  const color = tone === 'warning' ? colors.cocoa : theme.primaryContrast;
   return (
     <View style={[styles.badge, { backgroundColor }]}>
       <Ionicons name="star" size={11} color={color} />
-      <AppText
-        variant="caption"
-        style={[styles.badgeLabel, { color }]}
-      >
+      <AppText variant="caption" style={[styles.badgeLabel, { color }]}>
         {label}
       </AppText>
     </View>
@@ -1323,10 +1206,7 @@ function useReducedMotion() {
     void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
       if (mounted) setReduced(enabled);
     });
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      setReduced,
-    );
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduced);
     return () => {
       mounted = false;
       subscription.remove();
@@ -1404,15 +1284,9 @@ export function LoadingMabel({
       {!compact ? (
         <>
           <View style={styles.loadingDots}>
-            <View
-              style={[styles.loadingDot, { backgroundColor: colors.coral }]}
-            />
-            <View
-              style={[styles.loadingDot, { backgroundColor: colors.mustard }]}
-            />
-            <View
-              style={[styles.loadingDot, { backgroundColor: colors.sage }]}
-            />
+            <View style={[styles.loadingDot, { backgroundColor: colors.coral }]} />
+            <View style={[styles.loadingDot, { backgroundColor: colors.mustard }]} />
+            <View style={[styles.loadingDot, { backgroundColor: colors.sage }]} />
           </View>
           <AppText variant="label" tone="muted">
             {label}
@@ -1434,7 +1308,7 @@ export type EmptyStateProps = {
 export function EmptyState({
   title,
   message,
-  icon = "basket-outline",
+  icon = 'basket-outline',
   actionLabel,
   onAction,
 }: EmptyStateProps) {
@@ -1450,9 +1324,7 @@ export function EmptyState({
       <AppText tone="muted" style={styles.center}>
         {message}
       </AppText>
-      {actionLabel && onAction ? (
-        <PrimaryButton label={actionLabel} onPress={onAction} />
-      ) : null}
+      {actionLabel && onAction ? <PrimaryButton label={actionLabel} onPress={onAction} /> : null}
     </View>
   );
 }
@@ -1464,12 +1336,7 @@ export type BottomSheetProps = {
   children: ReactNode;
 };
 
-export function BottomSheet({
-  visible,
-  onClose,
-  title,
-  children,
-}: BottomSheetProps) {
+export function BottomSheet({ visible, onClose, title, children }: BottomSheetProps) {
   const theme = useMealMabelTheme();
   return (
     <Modal
@@ -1480,7 +1347,7 @@ export function BottomSheet({
       statusBarTranslucent
     >
       <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={[styles.modalRoot, { backgroundColor: theme.overlay }]}
       >
         <Pressable
@@ -1491,28 +1358,17 @@ export function BottomSheet({
         />
         <SafeAreaView
           accessibilityViewIsModal
-          edges={["bottom"]}
-          style={[
-            styles.bottomSheet,
-            shadows.lg,
-            { backgroundColor: theme.surface },
-          ]}
+          edges={['bottom']}
+          style={[styles.bottomSheet, shadows.lg, { backgroundColor: theme.surface }]}
         >
           <View style={styles.sheetHandleRow}>
-            <View
-              style={[styles.sheetHandle, { backgroundColor: theme.border }]}
-            />
+            <View style={[styles.sheetHandle, { backgroundColor: theme.border }]} />
           </View>
           <View style={styles.sheetHeader}>
             <AppText variant="h2" style={styles.flex}>
               {title}
             </AppText>
-            <IconButton
-              icon="close"
-              label={copy.a11y.close}
-              onPress={onClose}
-              size="small"
-            />
+            <IconButton icon="close" label={copy.a11y.close} onPress={onClose} size="small" />
           </View>
           <ScrollView
             contentContainerStyle={styles.sheetContent}
@@ -1529,67 +1385,67 @@ export function BottomSheet({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  fill: { width: "100%", height: "100%" },
+  fill: { width: '100%', height: '100%' },
   inline: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   pressed: { opacity: 0.76 },
-  center: { textAlign: "center" },
+  center: { textAlign: 'center' },
   screen: { flex: 1 },
   screenScrollContent: { flexGrow: 1 },
   screenContent: {
-    width: "100%",
+    width: '100%',
     maxWidth: layout.maxContentWidth,
-    alignSelf: "center",
+    alignSelf: 'center',
     paddingHorizontal: layout.screenGutter,
     paddingVertical: spacing.lg,
     gap: spacing.xl,
   },
   header: {
     minHeight: 64,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   headerSpacer: { width: 48, height: 48 },
-  headerCopy: { flex: 1, alignItems: "center", gap: spacing.xxs },
-  headerTitle: { textAlign: "center" },
+  headerCopy: { flex: 1, alignItems: 'center', gap: spacing.xxs },
+  headerTitle: { textAlign: 'center' },
   button: {
     minHeight: layout.minTouchTarget,
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
     borderRadius: radii.md,
     borderWidth: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.sm,
   },
   iconButton: {
     borderRadius: radii.pill,
     borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   card: { borderRadius: radii.xl, padding: spacing.lg },
   sectionHeader: {
-    flexDirection: "row",
-    alignItems: "flex-end",
+    flexDirection: 'row',
+    alignItems: 'flex-end',
     gap: spacing.md,
   },
-  textAction: { minHeight: layout.minTouchTarget, justifyContent: "center" },
+  textAction: { minHeight: layout.minTouchTarget, justifyContent: 'center' },
   choiceChip: {
     minHeight: layout.minTouchTarget,
     borderRadius: radii.pill,
     borderWidth: 2,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.xs,
   },
   stepper: {
@@ -1597,18 +1453,18 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: 2,
     paddingHorizontal: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
   },
   stepperButton: {
     width: 32,
     height: 32,
     borderRadius: radii.pill,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  stepperValue: { minWidth: 20, textAlign: "center" },
+  stepperValue: { minWidth: 20, textAlign: 'center' },
   inputGroup: { gap: spacing.xs },
   textInput: {
     minHeight: 52,
@@ -1623,8 +1479,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     borderWidth: 2,
     paddingHorizontal: spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   currencyInput: {
@@ -1638,8 +1494,8 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     borderWidth: 2,
     paddingHorizontal: spacing.lg,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
   },
   searchInput: {
@@ -1651,23 +1507,23 @@ const styles = StyleSheet.create({
   searchClear: {
     minWidth: layout.minTouchTarget,
     minHeight: layout.minTouchTarget,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   nutritionPill: {
     minHeight: 36,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
-  mealCard: { padding: 0, overflow: "hidden" },
-  mealImage: { height: 180, alignItems: "center", justifyContent: "center" },
+  mealCard: { padding: 0, overflow: 'hidden' },
+  mealImage: { height: 180, alignItems: 'center', justifyContent: 'center' },
   mealCopy: { padding: spacing.lg, gap: spacing.md },
   mealBadge: {
-    position: "absolute",
+    position: 'absolute',
     left: spacing.md,
     top: spacing.md,
     borderRadius: radii.pill,
@@ -1675,57 +1531,57 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.xs,
   },
   selectedBadge: {
-    position: "absolute",
+    position: 'absolute',
     right: spacing.md,
     top: spacing.md,
     width: 32,
     height: 32,
     borderRadius: 16,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  metaRow: { flexDirection: "row", flexWrap: "wrap", gap: spacing.md },
-  meta: { flexDirection: "row", alignItems: "center", gap: spacing.xs },
+  metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+  meta: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   budget: { gap: spacing.sm },
   budgetLabels: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     gap: spacing.sm,
   },
-  progressTrack: { height: 12, borderRadius: radii.pill, overflow: "hidden" },
-  progressFill: { height: "100%", borderRadius: radii.pill },
-  retailerLogo: { alignItems: "center", justifyContent: "center" },
+  progressTrack: { height: 12, borderRadius: radii.pill, overflow: 'hidden' },
+  progressFill: { height: '100%', borderRadius: radii.pill },
+  retailerLogo: { alignItems: 'center', justifyContent: 'center' },
   retailerCard: {
     minHeight: 76,
     borderRadius: radii.lg,
     borderWidth: 2,
     padding: spacing.md,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
   },
   valueBadge: {
     borderRadius: radii.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
   },
   comparisonCard: { gap: spacing.sm },
   offerRow: {
     minHeight: 60,
     paddingVertical: spacing.sm,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
   },
   shoppingRow: {
     minHeight: 62,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
     paddingVertical: spacing.sm,
   },
@@ -1734,83 +1590,83 @@ const styles = StyleSheet.create({
     height: 26,
     borderRadius: radii.xs,
     borderWidth: 2,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   shoppingCopy: {
     flex: 1,
     minHeight: layout.minTouchTarget,
-    justifyContent: "center",
+    justifyContent: 'center',
   },
-  strikethrough: { textDecorationLine: "line-through" },
+  strikethrough: { textDecorationLine: 'line-through' },
   shoppingCategory: { gap: spacing.sm },
   categoryHeader: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
     gap: spacing.sm,
   },
   categoryCard: { paddingVertical: 0 },
-  avatar: { alignItems: "center", justifyContent: "center" },
-  avatarOuter: { position: "absolute", top: 0, left: 0 },
-  avatarInner: { position: "absolute" },
-  avatarEar: { position: "absolute", opacity: 0.75 },
+  avatar: { alignItems: 'center', justifyContent: 'center' },
+  avatarOuter: { position: 'absolute', top: 0, left: 0 },
+  avatarInner: { position: 'absolute' },
+  avatarEar: { position: 'absolute', opacity: 0.75 },
   avatarCap: {
-    position: "absolute",
+    position: 'absolute',
     backgroundColor: colors.white,
     borderColor: colors.cocoa,
   },
   avatarBand: {
-    position: "absolute",
+    position: 'absolute',
     backgroundColor: colors.white,
     borderColor: colors.cocoa,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarEyes: { flexDirection: "row", gap: spacing.sm },
+  avatarEyes: { flexDirection: 'row', gap: spacing.sm },
   avatarEye: { backgroundColor: colors.cocoa },
   avatarSmile: {
-    position: "absolute",
+    position: 'absolute',
     borderBottomColor: colors.coralDark,
   },
   insight: {
     borderRadius: radii.lg,
     borderWidth: 2,
-    borderStyle: "dashed",
+    borderStyle: 'dashed',
     padding: spacing.lg,
-    flexDirection: "row",
-    alignItems: "flex-start",
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     gap: spacing.md,
   },
-  blob: { position: "absolute" },
+  blob: { position: 'absolute' },
   badge: {
-    alignSelf: "flex-start",
-    flexDirection: "row",
-    alignItems: "center",
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.xs,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    transform: [{ rotate: "-3deg" }],
+    transform: [{ rotate: '-3deg' }],
   },
-  badgeLabel: { textTransform: "uppercase", letterSpacing: 0.4 },
+  badgeLabel: { textTransform: 'uppercase', letterSpacing: 0.4 },
   insightAction: {
     minHeight: layout.minTouchTarget,
-    alignSelf: "flex-start",
-    justifyContent: "center",
+    alignSelf: 'flex-start',
+    justifyContent: 'center',
   },
   loading: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.md,
     padding: spacing.xl,
   },
   loadingCompact: { padding: 0 },
-  loadingDots: { flexDirection: "row", gap: spacing.sm },
+  loadingDots: { flexDirection: 'row', gap: spacing.sm },
   loadingDot: { width: 9, height: 9, borderRadius: 5 },
   emptyState: {
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing.md,
     padding: spacing.xxxl,
   },
@@ -1818,21 +1674,21 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    alignItems: "center",
-    justifyContent: "center",
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  modalRoot: { flex: 1, justifyContent: "flex-end" },
+  modalRoot: { flex: 1, justifyContent: 'flex-end' },
   modalDismiss: { flex: 1 },
   bottomSheet: {
-    maxHeight: "88%",
+    maxHeight: '88%',
     borderTopLeftRadius: radii.xl,
     borderTopRightRadius: radii.xl,
   },
-  sheetHandleRow: { alignItems: "center", paddingTop: spacing.sm },
+  sheetHandleRow: { alignItems: 'center', paddingTop: spacing.sm },
   sheetHandle: { width: 44, height: 5, borderRadius: radii.pill },
   sheetHeader: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,

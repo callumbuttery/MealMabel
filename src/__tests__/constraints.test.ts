@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   validatePlanRequest,
   validateRecipeConstraints,
+  validateRecipeHardConstraints,
 } from '@/domain/constraints';
 import { createHousehold } from '@/domain/household';
 import type { PlanRequest } from '@/domain/models';
@@ -74,5 +75,46 @@ describe('plan constraints', () => {
         preferences: { ...validRequest.preferences, allergens: ['fish'] },
       }).map((violation) => violation.code),
     ).toContain('ALLERGEN');
+  });
+
+  it('treats diets, restrictions and dislikes as hard constraints', () => {
+    expect(
+      validateRecipeHardConstraints(getRecipeById('turkey-chilli'), {
+        ...validRequest,
+        preferences: {
+          ...validRequest.preferences,
+          dietType: 'vegetarian',
+        },
+      }).map((violation) => violation.code),
+    ).toContain('DIET');
+
+    expect(
+      validateRecipeHardConstraints(getRecipeById('greek-yoghurt-oats'), {
+        ...validRequest,
+        preferences: {
+          ...validRequest.preferences,
+          dietaryRestrictions: ['nut_free'],
+        },
+      }).map((violation) => violation.code),
+    ).toContain('ALLERGEN');
+
+    expect(
+      validateRecipeHardConstraints(getRecipeById('greek-yoghurt-oats'), {
+        ...validRequest,
+        household: createHousehold(1, 0, [
+          { ...createHousehold(1, 0).members[0], allergens: ['peanuts'] },
+        ]),
+      }).map((violation) => violation.code),
+    ).toContain('ALLERGEN');
+
+    expect(
+      validateRecipeHardConstraints(getRecipeById('turkey-chilli'), {
+        ...validRequest,
+        preferences: {
+          ...validRequest.preferences,
+          excludedIngredients: ['Kidney beans'],
+        },
+      }).map((violation) => violation.code),
+    ).toContain('EXCLUDED_INGREDIENT');
   });
 });

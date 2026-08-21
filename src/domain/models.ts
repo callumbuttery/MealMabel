@@ -10,6 +10,21 @@ export type NutritionGoal =
   | 'five_a_day'
   | 'cheapest_possible';
 export type DietaryRestriction = 'nut_free' | 'dairy_free' | 'gluten_free' | 'egg_free';
+export type AllergenId =
+  | 'celery'
+  | 'gluten'
+  | 'crustaceans'
+  | 'eggs'
+  | 'fish'
+  | 'lupin'
+  | 'milk'
+  | 'molluscs'
+  | 'mustard'
+  | 'nuts'
+  | 'peanuts'
+  | 'sesame'
+  | 'soya'
+  | 'sulphites';
 export type CookingEffort = 'easy' | 'normal' | 'enthusiastic';
 export type HouseholdMemberKind = 'adult' | 'child';
 export type NutritionTargetMode = 'typical' | 'custom';
@@ -45,6 +60,8 @@ export interface HouseholdMember {
   id: string;
   displayName: string;
   kind: HouseholdMemberKind;
+  dietType?: DietType;
+  allergens?: AllergenId[];
   nutritionMode: NutritionTargetMode;
   body?: PersonBodyStats;
   customTargets?: Partial<DailyNutritionTargets>;
@@ -121,7 +138,7 @@ export interface Recipe {
   instructions: string[];
   nutritionPerServing: NutritionSummary;
   tags: string[];
-  allergens: string[];
+  allergens: AllergenId[];
 }
 
 export interface RecipeIngredient {

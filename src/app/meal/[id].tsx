@@ -18,7 +18,7 @@ import {
   SecondaryButton,
   SectionHeader,
 } from '@/components';
-import { copy, formatGrams, formatKcal, formatMinutes } from '@/copy';
+import { copy, formatAllergenList, formatGrams, formatKcal, formatMinutes } from '@/copy';
 import { spacing } from '@/theme';
 
 export default function MealDetailScreen() {
@@ -76,6 +76,14 @@ export default function MealDetailScreen() {
         />
       </View>
       <AppText tone="muted">{recipe.description}</AppText>
+      <SectionHeader title={copy.meal.allergens} />
+      <Card>
+        <AppText>
+          {recipe.allergens.length > 0
+            ? copy.meal.contains(formatAllergenList(recipe.allergens))
+            : copy.meal.noAllergens}
+        </AppText>
+      </Card>
       <SectionHeader title={copy.meal.ingredients} subtitle={copy.common.servings(meal.servings)} />
       <Card>
         {recipe.ingredients.map((ingredient) => (

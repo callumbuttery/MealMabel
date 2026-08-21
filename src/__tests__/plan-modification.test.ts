@@ -80,8 +80,8 @@ describe('mock plan modifications', () => {
       'Something different',
       {
         ...preferences,
-        dietaryRestrictions: ['dairy_free', 'egg_free', 'nut_free'],
-        allergens: ['dairy_free', 'egg_free', 'nut_free'],
+        dietaryRestrictions: ['dairy_free', 'egg_free', 'gluten_free', 'nut_free'],
+        allergens: ['dairy_free', 'egg_free', 'gluten_free', 'nut_free'],
       },
     );
     expect(noSafeBreakfast).toEqual({ ok: false, reason: 'no-safe-match' });

@@ -7,13 +7,23 @@ import { AppText, Blob, LoadingMabel, MabelInsight, PrimaryButton, Screen } from
 import {
   aggregateHouseholdTargets,
   createHousehold,
+  mergePreferenceAllergens,
+  requiredHouseholdDiet,
+  stricterDiet,
   type CookingEffort,
+  type DietType,
   type MealType,
   type PlanRequest,
   type RetailerId,
 } from '@/domain';
 import { copy } from '@/copy';
+import { NoSafePlanError } from '@/services';
 import { colors, spacing } from '@/theme';
+
+interface GenerationFailure {
+  message: string;
+  safeRefusal: boolean;
+}
 
 export default function GeneratingScreen() {
   const params = useLocalSearchParams<{
@@ -22,22 +32,27 @@ export default function GeneratingScreen() {
     meals?: string;
     retailers?: string;
     effort?: string;
+    diet?: string;
   }>();
   const { state, onboardingDraft, generatePlan } = useMealMabelApp();
   const [step, setStep] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<GenerationFailure | null>(null);
   const started = useRef(false);
   const budgetParam = params.budget;
   const daysParam = params.days;
   const mealsParam = params.meals;
   const retailersParam = params.retailers;
   const effortParam = params.effort;
+  const dietParam = params.diet;
 
   const run = useCallback(async () => {
     setError(null);
     const preferences = state.profile?.preferences;
     if (!preferences) {
-      setError(copy.generating.missingPreferences);
+      setError({
+        message: copy.generating.missingPreferences,
+        safeRefusal: false,
+      });
       return;
     }
     const now = new Date();
@@ -49,6 +64,13 @@ export default function GeneratingScreen() {
       onboardingDraft.members,
     );
     const householdTargets = aggregateHouseholdTargets(household.members);
+    const requestedDiet: DietType =
+      dietParam === 'vegan' || dietParam === 'vegetarian' || dietParam === 'pescatarian'
+        ? dietParam
+        : dietParam === 'anything'
+          ? dietParam
+          : (preferences.dietType ?? 'anything');
+    const dietType = stricterDiet(requestedDiet, requiredHouseholdDiet(household.members));
     const requestedBudget = Number(budgetParam);
     const maximumWeeklyBudget =
       Number.isFinite(requestedBudget) && requestedBudget >= 20 && requestedBudget <= 300
@@ -66,6 +88,9 @@ export default function GeneratingScreen() {
         ...preferences,
         maximumWeeklyBudget,
         cookingEffort,
+        dietType,
+        dietaryPreferences: dietType === 'anything' ? ['none'] : [dietType],
+        allergens: mergePreferenceAllergens(preferences, household.members),
         preferredRetailers: (retailersParam?.split(',') ??
           preferences.preferredRetailers) as RetailerId[],
         dailyCalorieTarget: householdTargets.caloriesKcal,
@@ -79,12 +104,26 @@ export default function GeneratingScreen() {
     try {
       await generatePlan(request);
       router.replace('/plan-summary');
-    } catch {
-      setError(copy.generating.failed);
+    } catch (cause) {
+      if (cause instanceof NoSafePlanError) {
+        const mealTypes = cause.mealTypes
+          .map((mealType) => copy.mealTypes[mealType].toLowerCase())
+          .join(', ');
+        setError({
+          message: copy.generating.safeFailure(mealTypes),
+          safeRefusal: true,
+        });
+      } else {
+        setError({
+          message: copy.generating.failed,
+          safeRefusal: false,
+        });
+      }
     }
   }, [
     budgetParam,
     daysParam,
+    dietParam,
     effortParam,
     generatePlan,
     mealsParam,
@@ -112,8 +151,17 @@ export default function GeneratingScreen() {
       <Blob size={180} color={colors.mustardSoft} top={-40} right={-50} />
       {error ? (
         <>
-          <MabelInsight title={copy.generating.retryTitle}>{error}</MabelInsight>
-          <PrimaryButton label={copy.common.tryAgain} onPress={run} />
+          <MabelInsight
+            title={
+              error.safeRefusal ? copy.generating.safeFailureTitle : copy.generating.retryTitle
+            }
+          >
+            {error.message}
+          </MabelInsight>
+          <PrimaryButton
+            label={error.safeRefusal ? copy.generating.changeChoices : copy.common.tryAgain}
+            onPress={error.safeRefusal ? () => router.back() : run}
+          />
         </>
       ) : (
         <>

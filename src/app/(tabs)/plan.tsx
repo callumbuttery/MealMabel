@@ -3,15 +3,8 @@ import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { useMealMabelApp } from '@/app-state/app-provider';
-import {
-  AppText,
-  ChoiceChip,
-  EmptyState,
-  MealCard,
-  Screen,
-  SectionHeader,
-} from '@/components';
-import { copy, formatMinutes } from '@/copy';
+import { AppText, ChoiceChip, EmptyState, MealCard, Screen, SectionHeader } from '@/components';
+import { copy, formatAllergenNote, formatMinutes } from '@/copy';
 import { spacing } from '@/theme';
 
 export default function PlanScreen() {
@@ -67,6 +60,7 @@ export default function PlanScreen() {
               meal.recipe.nutritionPerServing.caloriesKcal,
               meal.recipe.nutritionPerServing.proteinG,
             )}
+            note={formatAllergenNote(meal.recipe.allergens)}
             onPress={() => router.push({ pathname: '/meal/[id]', params: { id: meal.id } })}
           />
         ))}

@@ -1,11 +1,16 @@
 import { buildRetailerBasket, compareRetailers } from '@/domain/basket-optimizer';
-import { validatePlanRequest, validateRecipeConstraints } from '@/domain/constraints';
+import {
+  validatePlanRequest,
+  validateRecipeConstraints,
+  validateRecipeHardConstraints,
+} from '@/domain/constraints';
 import { createShoppingList } from '@/domain/ingredients';
 import type {
   GroceryProduct,
   IngredientRequirement,
   Meal,
   MealSwapRequest,
+  MealType,
   PlanDay,
   PlanModificationRequest,
   PlanRequest,
@@ -30,6 +35,15 @@ import type {
 
 export interface MockServiceOptions {
   delayMs?: number;
+}
+
+export class NoSafePlanError extends Error {
+  public readonly code = 'NO_SAFE_RECIPES';
+
+  public constructor(public readonly mealTypes: MealType[]) {
+    super('NO_SAFE_RECIPES');
+    this.name = 'NoSafePlanError';
+  }
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -98,17 +112,42 @@ export class MockMealPlanningService implements MealPlanningService {
       throw new Error(violations.map((violation) => violation.message).join(' '));
     }
 
+    const allowedRecipes = new Map(
+      request.mealsPerDay.map((mealType) => [
+        mealType,
+        SEEDED_RECIPES.filter(
+          (recipe) =>
+            recipe.mealTypes.includes(mealType) &&
+            validateRecipeHardConstraints(recipe, request).length === 0,
+        ),
+      ]),
+    );
+    const missingMealTypes = request.mealsPerDay.filter(
+      (mealType) => allowedRecipes.get(mealType)?.length === 0,
+    );
+    if (missingMealTypes.length > 0) {
+      throw new NoSafePlanError(missingMealTypes);
+    }
+
     const days = SEEDED_WEEKLY_PLAN.days
       .slice(0, request.durationDays ?? 7)
       .map((seedDay, dayIndex) => {
         const date = dateAtOffset(request.weekStarting, dayIndex);
         const meals = seedDay.meals
           .filter((meal) => request.mealsPerDay.includes(meal.type))
-          .map((meal) => ({
-            ...meal,
-            id: `${date}-${meal.type}`,
-            servings: request.household.memberCount,
-          }));
+          .map((meal, mealIndex) => {
+            const seedIsAllowed = validateRecipeHardConstraints(meal.recipe, request).length === 0;
+            const candidates = allowedRecipes.get(meal.type) ?? [];
+            const recipe = seedIsAllowed
+              ? meal.recipe
+              : candidates[(dayIndex + mealIndex) % candidates.length];
+            return {
+              ...meal,
+              id: `${date}-${meal.type}`,
+              recipe,
+              servings: request.household.memberCount,
+            };
+          });
         return {
           ...seedDay,
           date,

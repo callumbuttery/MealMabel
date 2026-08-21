@@ -15,6 +15,8 @@ import {
   type HouseholdMember,
   type NutritionTargetMode,
 } from '@/domain';
+import { DietChips } from '@/features/diet/diet-chips';
+import { AllergenChips } from '@/features/allergens/allergen-chips';
 import { copy } from '@/copy';
 import { spacing } from '@/theme';
 
@@ -34,9 +36,7 @@ export function HouseholdPeopleForm({
   onMembersChange: (members: HouseholdMember[]) => void;
 }) {
   const updateMember = (id: string, patch: Partial<HouseholdMember>) => {
-    onMembersChange(
-      members.map((member) => (member.id === id ? { ...member, ...patch } : member)),
-    );
+    onMembersChange(members.map((member) => (member.id === id ? { ...member, ...patch } : member)));
   };
 
   return (
@@ -64,10 +64,7 @@ export function HouseholdPeopleForm({
         </View>
       </Card>
 
-      <SectionHeader
-        title={copy.household.peopleTitle}
-        subtitle={copy.household.peopleSubtitle}
-      />
+      <SectionHeader title={copy.household.peopleTitle} subtitle={copy.household.peopleSubtitle} />
       {members.map((member) => (
         <PersonCard
           key={member.id}
@@ -116,6 +113,20 @@ function PersonCard({
             ? copy.household.adultPlaceholder
             : copy.household.childPlaceholder
         }
+      />
+      <DietChips
+        compact
+        title={copy.household.diet}
+        subtitle={copy.household.dietHelper}
+        value={member.dietType ?? 'anything'}
+        onChange={(dietType) => onChange({ dietType })}
+      />
+      <AllergenChips
+        compact
+        title={copy.household.allergens}
+        subtitle={copy.household.allergensHelper}
+        value={member.allergens ?? []}
+        onChange={(allergens) => onChange({ allergens })}
       />
       <View style={styles.chips}>
         <ChoiceChip
