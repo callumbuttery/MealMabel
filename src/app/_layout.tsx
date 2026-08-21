@@ -37,6 +37,7 @@ function Navigation() {
         <Stack.Screen name="plan-summary" />
         <Stack.Screen name="edit-household" />
         <Stack.Screen name="ask-mabel" />
+        <Stack.Screen name="compare-shop" />
         <Stack.Screen name="meal/[id]" />
         <Stack.Screen name="retailer/[id]" />
       </Stack>

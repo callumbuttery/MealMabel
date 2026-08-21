@@ -74,7 +74,7 @@ export default function HomeScreen() {
         <AppText tone="muted">{copy.home.compareBody}</AppText>
         <SecondaryButton
           label={copy.home.compareCta}
-          onPress={() => router.push('/(tabs)/shop')}
+          onPress={() => router.push('/compare-shop')}
         />
       </Card>
       {plan ? (
@@ -91,7 +91,9 @@ function Stat({ value, label }: { value: string; label: string }) {
   return (
     <View style={styles.stat}>
       <AppText variant="h3">{value}</AppText>
-      <AppText variant="caption" tone="muted">{label}</AppText>
+      <AppText variant="caption" tone="muted">
+        {label}
+      </AppText>
     </View>
   );
 }

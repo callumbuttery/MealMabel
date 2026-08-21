@@ -6,6 +6,7 @@ import WelcomeScreen from '@/app/(onboarding)';
 import PlanScreen from '@/app/(tabs)/plan';
 import ShopScreen from '@/app/(tabs)/shop';
 import AskMabelScreen from '@/app/ask-mabel';
+import CompareShopScreen from '@/app/compare-shop';
 import CreatePlanScreen from '@/app/create-plan';
 import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
 import {
@@ -99,6 +100,13 @@ test('Ask Mabel offers structured changes for the selected meal', async () => {
   expect(view.getByText(meal.recipe.name)).toBeTruthy();
   expect(view.getByText(copy.askMabel.suggestions[0])).toBeTruthy();
   expect(view.getByRole('button', { name: copy.askMabel.updateCta })).toBeDisabled();
+});
+
+test('Compare My Shop accepts a freeform shopping list', async () => {
+  const view = await render(<CompareShopScreen />);
+  expect(view.getByText(copy.compareShop.introTitle)).toBeTruthy();
+  expect(view.getByLabelText(copy.compareShop.listLabel)).toBeTruthy();
+  expect(view.getByRole('button', { name: copy.compareShop.compareCta })).toBeDisabled();
 });
 
 test('shop comparison identifies the best-value retailer', async () => {

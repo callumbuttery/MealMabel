@@ -1,4 +1,5 @@
 import type {
+  CompareShopResult,
   GroceryProduct,
   IngredientRequirement,
   MealSwapRequest,
@@ -14,17 +15,16 @@ import type {
 export interface MealPlanningService {
   generatePlan(request: PlanRequest): Promise<WeeklyPlan>;
   swapMeal(plan: WeeklyPlan, request: MealSwapRequest): Promise<WeeklyPlan>;
-  modifyPlan(
-    plan: WeeklyPlan,
-    request: PlanModificationRequest,
-  ): Promise<WeeklyPlan>;
+  modifyPlan(plan: WeeklyPlan, request: PlanModificationRequest): Promise<WeeklyPlan>;
 }
 
 export interface ShoppingService {
   createList(plan: WeeklyPlan): Promise<ShoppingList>;
-  compareRetailers(
-    requirements: IngredientRequirement[],
-  ): Promise<RetailerComparison>;
+  compareRetailers(requirements: IngredientRequirement[]): Promise<RetailerComparison>;
+}
+
+export interface CompareShopService {
+  compareList(input: string): Promise<CompareShopResult>;
 }
 
 export interface GroceryCatalogueService {
@@ -38,8 +38,5 @@ export interface GroceryCatalogService {
 
 export interface BasketService {
   buildBasket(plan: WeeklyPlan, retailer: RetailerId): Promise<RetailerBasket>;
-  compareRetailers(
-    plan: WeeklyPlan,
-    retailers: RetailerId[],
-  ): Promise<RetailerComparison>;
+  compareRetailers(plan: WeeklyPlan, retailers: RetailerId[]): Promise<RetailerComparison>;
 }

@@ -294,6 +294,35 @@ export const copy = {
     seePlan: 'See updated plan',
     anotherChange: 'Make another change',
   },
+  compareShop: {
+    title: 'Compare my shop',
+    introTitle: 'Paste your shopping list',
+    introBody:
+      'Put one item on each line. Mabel will match what she can to demo supermarket packs.',
+    listLabel: 'Shopping list',
+    listPlaceholder: '500g chicken breast\nBrown rice\n2 broccoli\n12 eggs',
+    compareCta: 'Compare shops',
+    emptyError: 'Add at least one item to compare.',
+    noMatches:
+      "I couldn't match anything on that list yet. Try simple item names such as chicken, rice or eggs.",
+    loading: 'Matching your list to supermarket packs…',
+    resultsTitle: 'Your comparison',
+    matchedSummary: (matched: number, unmatched: number) =>
+      unmatched > 0 ? `${matched} matched · ${unmatched} not matched` : `${matched} items matched`,
+    bestBadge: 'Best overall',
+    bestTitle: (retailer: string) => `${retailer} is cheapest overall.`,
+    bestBody: (total: string, saving: string) =>
+      `The matched shop comes to ${total}, saving ${saving} against the most expensive option.`,
+    retailersTitle: 'Full shop comparison',
+    individualTitle: 'Cheapest individual items',
+    individualBody:
+      'See the cheapest matched pack at each shop. This does not plan a multi-store route.',
+    unmatchedTitle: 'Not matched',
+    unmatchedBody: (items: string) =>
+      `Try a simpler name for: ${items}. These are not included in the totals.`,
+    editList: 'Edit shopping list',
+    packDetail: (count: number, size: string) => `${count} × ${size}`,
+  },
   shop: {
     title: 'Shop',
     yourShop: 'Your shop',

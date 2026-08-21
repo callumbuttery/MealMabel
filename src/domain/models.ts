@@ -9,11 +9,7 @@ export type NutritionGoal =
   | 'high_fibre'
   | 'five_a_day'
   | 'cheapest_possible';
-export type DietaryRestriction =
-  | 'nut_free'
-  | 'dairy_free'
-  | 'gluten_free'
-  | 'egg_free';
+export type DietaryRestriction = 'nut_free' | 'dairy_free' | 'gluten_free' | 'egg_free';
 export type CookingEffort = 'easy' | 'normal' | 'enthusiastic';
 export type HouseholdMemberKind = 'adult' | 'child';
 export type NutritionTargetMode = 'typical' | 'custom';
@@ -211,6 +207,16 @@ export interface RetailerComparison {
   cheapestRetailerId: RetailerId | null;
   savingsAgainstMostExpensive: number;
   currency: CurrencyCode;
+}
+
+export interface CompareShopMatchedItem extends IngredientRequirement {
+  inputLines: string[];
+}
+
+export interface CompareShopResult {
+  matchedItems: CompareShopMatchedItem[];
+  unmatchedLines: string[];
+  comparison: RetailerComparison;
 }
 
 export interface MealSwapRequest {
