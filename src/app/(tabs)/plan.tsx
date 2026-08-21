@@ -53,6 +53,7 @@ export default function PlanScreen() {
         {day.meals.map((meal) => (
           <MealCard
             key={meal.id}
+            mealType={meal.type}
             badge={copy.mealTypes[meal.type]}
             title={meal.recipe.name}
             time={formatMinutes(meal.recipe.prepTimeMinutes + meal.recipe.cookTimeMinutes)}

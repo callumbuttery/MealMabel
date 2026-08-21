@@ -7,6 +7,8 @@ import {
 import { createShoppingList } from '@/domain/ingredients';
 import { rankRecipesForRequest } from '@/domain/plan-optimizer';
 import type {
+  Account,
+  AuthProvider,
   GroceryProduct,
   IngredientRequirement,
   Meal,
@@ -27,6 +29,7 @@ import { SEEDED_GROCERY_CATALOGUE } from '@/fixtures/catalogue';
 import { SEEDED_RECIPES } from '@/fixtures/recipes';
 import { SEEDED_WEEKLY_PLAN } from '@/fixtures/weekly-plan';
 import type {
+  AuthService,
   BasketService,
   GroceryCatalogService,
   GroceryCatalogueService,
@@ -304,5 +307,48 @@ export class MockBasketService implements BasketService {
   ): Promise<RetailerComparison> {
     await wait(this.options.delayMs ?? 150);
     return compareRetailers(createShoppingList(plan).items, SEEDED_GROCERY_CATALOGUE, retailers);
+  }
+}
+
+const PROVIDER_IDENTIFIER: Record<Exclude<AuthProvider, 'email'>, string> = {
+  apple: 'Apple ID',
+  google: 'Google Account',
+};
+
+/**
+ * Simulates a social/email sign-in. No credentials leave the device — there is no OAuth client,
+ * no Apple entitlement, and no backend session yet. Swap for a real `AuthService` once those
+ * exist; screens only depend on this interface.
+ */
+export class MockAuthService implements AuthService {
+  private readonly delayMs: number;
+
+  public constructor(options: MockServiceOptions = {}) {
+    this.delayMs = options.delayMs ?? 600;
+  }
+
+  public async signIn(provider: AuthProvider, email?: string, name?: string): Promise<Account> {
+    await wait(this.delayMs);
+    const createdAt = new Date().toISOString();
+    if (provider === 'email') {
+      const trimmed = (email ?? '').trim();
+      if (!trimmed || !trimmed.includes('@') || !trimmed.includes('.')) {
+        throw new Error('Enter a valid email address.');
+      }
+      const trimmedName = (name ?? '').trim();
+      const [localPart] = trimmed.split('@');
+      return {
+        provider,
+        identifier: trimmed,
+        displayName: trimmedName || localPart.charAt(0).toUpperCase() + localPart.slice(1),
+        createdAt,
+      };
+    }
+    return {
+      provider,
+      identifier: PROVIDER_IDENTIFIER[provider],
+      displayName: 'You',
+      createdAt,
+    };
   }
 }

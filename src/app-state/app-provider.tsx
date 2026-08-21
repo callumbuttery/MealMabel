@@ -20,6 +20,8 @@ import {
   syncHouseholdMembers,
 } from '@/domain';
 import type {
+  Account,
+  AuthProvider,
   DietaryRestriction,
   DietType,
   Household,
@@ -36,6 +38,7 @@ import type {
 import { analytics } from '@/analytics';
 import {
   createMockPlanModification,
+  MockAuthService,
   MockGroceryCatalogueService,
   MockMealPlanningService,
   MockShoppingService,
@@ -48,6 +51,7 @@ const planner = new MockMealPlanningService({ delayMs: 2800 });
 const fastPlanner = new MockMealPlanningService({ delayMs: 450 });
 const shopping = new MockShoppingService({ delayMs: 120 });
 const catalogue = new MockGroceryCatalogueService({ delayMs: 100 });
+const auth = new MockAuthService({ delayMs: 600 });
 
 export interface OnboardingDraft {
   adults: number;
@@ -104,6 +108,8 @@ interface AppContextValue {
     productId: string,
   ) => Promise<void>;
   toggleShoppingItem: (id: string) => Promise<void>;
+  signIn: (provider: AuthProvider, email?: string, name?: string) => Promise<Account>;
+  signOut: () => Promise<void>;
   clearApp: () => Promise<void>;
 }
 
@@ -325,6 +331,19 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
     [persist, state],
   );
 
+  const signIn = useCallback(
+    async (provider: AuthProvider, email?: string, name?: string) => {
+      const account = await auth.signIn(provider, email, name);
+      await persist({ ...state, account });
+      return account;
+    },
+    [persist, state],
+  );
+
+  const signOut = useCallback(async () => {
+    await persist({ ...state, account: null });
+  }, [persist, state]);
+
   const clearApp = useCallback(async () => {
     await repository.clear();
     setState(EMPTY_APP_STATE);
@@ -346,6 +365,8 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       modifyPlan,
       selectBasketProduct,
       toggleShoppingItem,
+      signIn,
+      signOut,
       clearApp,
     }),
     [
@@ -357,6 +378,8 @@ export function MealMabelProvider({ children }: { children: ReactNode }) {
       ready,
       saveHouseholdFromDraft,
       selectBasketProduct,
+      signIn,
+      signOut,
       state,
       swapMeal,
       toggleShoppingItem,

@@ -1,16 +1,39 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, View } from 'react-native';
 
 import { useMealMabelApp } from '@/app-state/app-provider';
 import { AppText, Card, ChoiceChip, Screen, SecondaryButton, SectionHeader } from '@/components';
 import { copy, formatAllergenList } from '@/copy';
 import { formatNutritionTargets, householdAllergens, resolveMemberTargets } from '@/domain';
-import { spacing } from '@/theme';
+import { spacing, useMealMabelTheme } from '@/theme';
 
 export default function ProfileScreen() {
-  const { state, onboardingDraft, clearApp } = useMealMabelApp();
+  const { state, onboardingDraft, clearApp, signOut } = useMealMabelApp();
   const preferences = state.profile?.preferences;
   const notedAllergens = householdAllergens(onboardingDraft.members);
+
+  const confirmAndClear = (title: string, message: string, confirmLabel: string) => {
+    Alert.alert(title, message, [
+      { text: copy.common.cancel, style: 'cancel' },
+      {
+        text: confirmLabel,
+        style: 'destructive',
+        onPress: async () => {
+          await clearApp();
+          router.replace('/');
+        },
+      },
+    ]);
+  };
+
+  const confirmSignOut = () => {
+    Alert.alert(copy.profile.signOutConfirmTitle, copy.profile.signOutConfirmBody, [
+      { text: copy.common.cancel, style: 'cancel' },
+      { text: copy.profile.signOut, onPress: () => void signOut() },
+    ]);
+  };
+
   return (
     <Screen>
       <AppText variant="h1">{copy.profile.title}</AppText>
@@ -105,12 +128,40 @@ export default function ProfileScreen() {
       </AppText>
       <SectionHeader title={copy.profile.account} />
       <Card>
-        <AppText>{copy.profile.accountBody}</AppText>
+        <AppText tone="muted">
+          {state.account
+            ? copy.profile.signedInAs(
+                state.account.displayName,
+                copy.profile.providerLabel[state.account.provider],
+              )
+            : copy.profile.accountBody}
+        </AppText>
+      </Card>
+      <Card>
+        {state.account ? (
+          <PressableRow label={copy.profile.signOut} onPress={confirmSignOut} />
+        ) : (
+          <PressableRow
+            label={copy.profile.signIn}
+            onPress={() => router.push({ pathname: '/login', params: { from: 'profile' } })}
+          />
+        )}
+        <PressableRow
+          label={copy.profile.deleteAccount}
+          destructive
+          onPress={() =>
+            confirmAndClear(
+              copy.profile.deleteConfirmTitle,
+              copy.profile.deleteConfirmBody,
+              copy.profile.deleteAccount,
+            )
+          }
+        />
       </Card>
       <SectionHeader title={copy.profile.about} />
       <Card>
-        <Row label={copy.profile.privacy} value={copy.common.view} />
-        <Row label={copy.profile.terms} value={copy.common.view} />
+        <PressableRow label={copy.profile.privacy} onPress={() => router.push('/privacy')} />
+        <PressableRow label={copy.profile.terms} onPress={() => router.push('/terms')} />
         <Row label={copy.profile.version} value={copy.profile.versionValue} />
       </Card>
       <SecondaryButton
@@ -130,6 +181,31 @@ function Row({ label, value }: { label: string; value: string }) {
       <AppText variant="bodyStrong">{label}</AppText>
       <AppText tone="muted">{value}</AppText>
     </View>
+  );
+}
+
+function PressableRow({
+  label,
+  onPress,
+  destructive = false,
+}: {
+  label: string;
+  onPress: () => void;
+  destructive?: boolean;
+}) {
+  const theme = useMealMabelTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      onPress={onPress}
+      style={styles.row}
+    >
+      <AppText variant="bodyStrong" tone={destructive ? 'danger' : 'default'}>
+        {label}
+      </AppText>
+      <Ionicons name="chevron-forward" size={18} color={theme.textMuted} />
+    </Pressable>
   );
 }
 

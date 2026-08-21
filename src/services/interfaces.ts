@@ -1,4 +1,6 @@
 import type {
+  Account,
+  AuthProvider,
   CompareShopResult,
   GroceryProduct,
   IngredientRequirement,
@@ -12,6 +14,10 @@ import type {
   ShoppingList,
   WeeklyPlan,
 } from '@/domain/models';
+
+export interface AuthService {
+  signIn(provider: AuthProvider, email?: string, name?: string): Promise<Account>;
+}
 
 export interface MealPlanningService {
   generatePlan(request: PlanRequest): Promise<WeeklyPlan>;

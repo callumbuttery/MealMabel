@@ -1,6 +1,7 @@
 import { fireEvent, render } from '@testing-library/react-native';
 import { beforeEach, expect, jest, test } from '@jest/globals';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Alert } from 'react-native';
 
 import WelcomeScreen from '@/app/(onboarding)';
 import HouseholdScreen from '@/app/(onboarding)/household';
@@ -13,6 +14,10 @@ import CompareShopScreen from '@/app/compare-shop';
 import CreatePlanScreen from '@/app/create-plan';
 import EditPreferencesScreen from '@/app/edit-preferences';
 import GeneratingScreen from '@/app/generating';
+import LoginScreen from '@/app/login';
+import PrivacyScreen from '@/app/privacy';
+import RegisterScreen from '@/app/register';
+import TermsScreen from '@/app/terms';
 import { useMealMabelApp, usePlanData } from '@/app-state/app-provider';
 import {
   aggregateIngredientRequirements,
@@ -20,6 +25,7 @@ import {
   createHousehold,
   createShoppingList,
   syncHouseholdMembers,
+  type AuthProvider,
   type UserProfile,
 } from '@/domain';
 import { copy, formatAllergenList } from '@/copy';
@@ -83,6 +89,13 @@ beforeEach(() => {
     modifyPlan: async () => ({ ok: false, reason: 'unsupported-request' }),
     selectBasketProduct: async () => undefined,
     toggleShoppingItem: async () => undefined,
+    signIn: async (provider) => ({
+      provider,
+      identifier: 'demo@example.com',
+      displayName: 'Demo',
+      createdAt: '2026-08-01T00:00:00.000Z',
+    }),
+    signOut: async () => undefined,
     clearApp: async () => undefined,
   });
   mockUsePlanData.mockReturnValue({ isLoading: false });
@@ -348,4 +361,150 @@ test('generating admits when even the cheapest shop is over budget', async () =>
   const view = await render(<GeneratingScreen />);
   expect(await view.findByText(copy.generating.budgetFailureTitle)).toBeTruthy();
   expect(jest.mocked(router.replace)).not.toHaveBeenCalledWith('/plan-summary');
+});
+
+test('profile opens privacy and terms from the About card', async () => {
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true, profile: PROFILE },
+  });
+  const view = await render(<ProfileScreen />);
+
+  await fireEvent.press(view.getByRole('button', { name: copy.profile.privacy }));
+  expect(jest.mocked(router.push)).toHaveBeenLastCalledWith('/privacy');
+
+  await fireEvent.press(view.getByRole('button', { name: copy.profile.terms }));
+  expect(jest.mocked(router.push)).toHaveBeenLastCalledWith('/terms');
+});
+
+test('profile offers to sign in when no account is set', async () => {
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true, profile: PROFILE, account: null },
+  });
+
+  const view = await render(<ProfileScreen />);
+  expect(view.getByText(copy.profile.accountBody)).toBeTruthy();
+  await fireEvent.press(view.getByRole('button', { name: copy.profile.signIn }));
+
+  expect(jest.mocked(router.push)).toHaveBeenLastCalledWith({
+    pathname: '/login',
+    params: { from: 'profile' },
+  });
+});
+
+test('profile sign out clears the account but keeps local data', async () => {
+  const signOut = jest.fn(async () => undefined);
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: {
+      ...EMPTY_APP_STATE,
+      onboardingComplete: true,
+      profile: PROFILE,
+      account: {
+        provider: 'google',
+        identifier: 'demo@example.com',
+        displayName: 'Demo',
+        createdAt: '2026-08-01T00:00:00.000Z',
+      },
+    },
+    signOut,
+  });
+  const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
+    const confirm = buttons?.find((button) => button.text === copy.profile.signOut);
+    void confirm?.onPress?.();
+  });
+
+  const view = await render(<ProfileScreen />);
+  expect(
+    view.getByText(copy.profile.signedInAs('Demo', copy.profile.providerLabel.google)),
+  ).toBeTruthy();
+  await fireEvent.press(view.getByRole('button', { name: copy.profile.signOut }));
+
+  expect(alertSpy).toHaveBeenCalledWith(
+    copy.profile.signOutConfirmTitle,
+    copy.profile.signOutConfirmBody,
+    expect.any(Array),
+  );
+  expect(signOut).toHaveBeenCalled();
+  expect(jest.mocked(router.replace)).not.toHaveBeenCalledWith('/');
+
+  alertSpy.mockRestore();
+});
+
+test('login screen simulates Apple, Google and email providers without leaving the device', async () => {
+  const signIn = jest.fn(async (provider: AuthProvider) => ({
+    provider,
+    identifier: 'demo',
+    displayName: 'You',
+    createdAt: '2026-08-01T00:00:00.000Z',
+  }));
+  mockUseLocalSearchParams.mockReturnValue({ from: 'profile' });
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true },
+    signIn,
+  });
+
+  const view = await render(<LoginScreen />);
+  await fireEvent.press(view.getByRole('button', { name: copy.login.apple }));
+
+  expect(signIn).toHaveBeenCalledWith('apple', undefined);
+  expect(jest.mocked(router.back)).toHaveBeenCalled();
+});
+
+test('login screen requires an email before continuing with email', async () => {
+  const signIn = jest.fn(async () => {
+    throw new Error('Enter a valid email address.');
+  });
+  mockUseLocalSearchParams.mockReturnValue({ from: 'profile' });
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true },
+    signIn,
+  });
+
+  const view = await render(<LoginScreen />);
+  await fireEvent.press(view.getByRole('button', { name: copy.login.cta }));
+
+  expect(await view.findByText(copy.login.invalidEmail)).toBeTruthy();
+});
+
+test('login screen cross-links to register', async () => {
+  const view = await render(<LoginScreen />);
+  await fireEvent.press(view.getByText(copy.login.signUp));
+  expect(jest.mocked(router.replace)).toHaveBeenLastCalledWith('/register');
+});
+
+test('register screen passes the typed name into the mocked account', async () => {
+  const signIn = jest.fn(async (provider: AuthProvider, email?: string, name?: string) => ({
+    provider,
+    identifier: email ?? 'demo',
+    displayName: name || 'You',
+    createdAt: '2026-08-01T00:00:00.000Z',
+  }));
+  mockUseLocalSearchParams.mockReturnValue({ from: 'profile' });
+  mockUseApp.mockReturnValue({
+    ...mockUseApp(),
+    state: { ...EMPTY_APP_STATE, onboardingComplete: true },
+    signIn,
+  });
+
+  const view = await render(<RegisterScreen />);
+  await fireEvent.changeText(view.getByLabelText(copy.register.nameLabel), 'Alex');
+  await fireEvent.changeText(view.getByLabelText(copy.register.emailLabel), 'alex@example.com');
+  await fireEvent.press(view.getByRole('button', { name: copy.register.cta }));
+
+  expect(signIn).toHaveBeenCalledWith('email', 'alex@example.com', 'Alex');
+  expect(jest.mocked(router.back)).toHaveBeenCalled();
+});
+
+test('privacy and terms screens show their static content', async () => {
+  const privacyView = await render(<PrivacyScreen />);
+  expect(privacyView.getByText(copy.legal.privacyTitle)).toBeTruthy();
+  expect(privacyView.getByText(copy.legal.privacyBody[0])).toBeTruthy();
+
+  const termsView = await render(<TermsScreen />);
+  expect(termsView.getByText(copy.legal.termsTitle)).toBeTruthy();
+  expect(termsView.getByText(copy.legal.termsBody[0])).toBeTruthy();
 });

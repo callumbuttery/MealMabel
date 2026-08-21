@@ -1,62 +1,29 @@
-export {
-  AppHeader,
-  AppText,
-  AppTextInput,
-  Badge,
-  Blob,
-  BottomSheet,
-  BudgetProgress,
-  Card,
-  ChoiceChip,
-  CurrencyInput,
-  EmptyState,
-  IconButton,
-  LoadingMabel,
-  MabelAvatar,
-  MabelInsight,
-  MealCard,
-  NumberStepper,
-  NutritionPill,
-  PriceComparisonCard,
-  PrimaryButton,
-  RetailerCard,
-  RetailerLogo,
-  Screen,
-  SearchInput,
-  SecondaryButton,
-  SectionHeader,
-  ShoppingCategory,
-  ShoppingListItemRow,
-  ShoppingListRow,
-} from "./meal-mabel";
-
-export type {
-  AppHeaderProps,
-  AppTextInputProps,
-  AppTextProps,
-  BadgeProps,
-  BlobProps,
-  BottomSheetProps,
-  BudgetProgressProps,
-  CardProps,
-  ChoiceChipProps,
-  CurrencyInputProps,
-  EmptyStateProps,
-  IconButtonProps,
-  LoadingMabelProps,
-  MabelAvatarProps,
-  MabelInsightProps,
-  MealCardProps,
-  NumberStepperProps,
-  NutritionPillProps,
-  PriceComparisonCardProps,
-  PriceOffer,
-  RetailerCardProps,
-  RetailerLogoProps,
-  ScreenProps,
-  SearchInputProps,
-  SectionHeaderProps,
-  ShoppingCategoryProps,
-  ShoppingListItemRowProps,
-  ShoppingListRowProps,
-} from "./meal-mabel";
+export * from './app-header';
+export * from './app-text';
+export * from './badge';
+export * from './blob';
+export * from './bottom-sheet';
+export * from './budget-progress';
+export * from './button';
+export * from './card';
+export * from './choice-chip';
+export * from './currency-input';
+export * from './empty-state';
+export * from './icon-button';
+export * from './icon-name';
+export * from './loading-mabel';
+export * from './mabel-avatar';
+export * from './mabel-insight';
+export * from './meal-card';
+export * from './number-stepper';
+export * from './nutrition-pill';
+export * from './price-comparison-card';
+export * from './retailer-card';
+export * from './retailer-logo';
+export * from './screen';
+export * from './search-input';
+export * from './section-header';
+export * from './shopping-category';
+export * from './shopping-list-item-row';
+export * from './sticker-button';
+export * from './text-input';

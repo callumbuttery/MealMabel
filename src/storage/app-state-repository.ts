@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import type { ProductSelectionOverrides, UserProfile, WeeklyPlan } from '@/domain/models';
+import type { Account, ProductSelectionOverrides, UserProfile, WeeklyPlan } from '@/domain/models';
 
 export interface KeyValueStorage {
   getItem(key: string): Promise<string | null>;
@@ -15,6 +15,7 @@ export interface PersistedAppState {
   currentPlan: WeeklyPlan | null;
   checkedShoppingItemIds: string[];
   productSelections?: ProductSelectionOverrides;
+  account?: Account | null;
 }
 
 export const EMPTY_APP_STATE: PersistedAppState = {
@@ -24,6 +25,7 @@ export const EMPTY_APP_STATE: PersistedAppState = {
   currentPlan: null,
   checkedShoppingItemIds: [],
   productSelections: {},
+  account: null,
 };
 
 const APP_STATE_KEY = '@meal-mabel/app-state/v1';
@@ -55,7 +57,11 @@ export class AppStateRepository {
     if (!isPersistedAppState(parsed)) {
       throw new Error('Stored app state has an unsupported shape.');
     }
-    return { ...parsed, productSelections: parsed.productSelections ?? {} };
+    return {
+      ...parsed,
+      productSelections: parsed.productSelections ?? {},
+      account: parsed.account ?? null,
+    };
   }
 
   public async save(state: PersistedAppState): Promise<void> {
@@ -113,6 +119,9 @@ function isPersistedAppState(value: unknown): value is PersistedAppState {
         candidate.productSelections !== null &&
         Object.values(candidate.productSelections).every(
           (productId) => typeof productId === 'string',
-        )))
+        ))) &&
+    (candidate.account === undefined ||
+      candidate.account === null ||
+      typeof candidate.account === 'object')
   );
 }

@@ -10,7 +10,6 @@ import {
   BottomSheet,
   Card,
   ChoiceChip,
-  MabelAvatar,
   MabelInsight,
   NutritionPill,
   PrimaryButton,
@@ -19,7 +18,13 @@ import {
   SectionHeader,
 } from '@/components';
 import { copy, formatAllergenList, formatGrams, formatKcal, formatMinutes } from '@/copy';
-import { spacing } from '@/theme';
+import { colors, spacing } from '@/theme';
+
+const MEAL_TYPE_TINTS = {
+  breakfast: colors.peach,
+  lunch: colors.sageSoft,
+  dinner: colors.sageSoft,
+} as const;
 
 export default function MealDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -58,8 +63,15 @@ export default function MealDetailScreen() {
         subtitle={copy.meal.subtitle(day.dayName, copy.mealTypes[meal.type])}
         onBack={() => router.back()}
       />
-      <Card style={styles.image}>
-        <MabelAvatar size={110} accessibilityLabel={copy.a11y.mealImagePlaceholder} />
+      <Card
+        style={[styles.image, { backgroundColor: MEAL_TYPE_TINTS[meal.type] }]}
+        accessibilityLabel={copy.a11y.mealImagePlaceholder}
+      >
+        <View style={styles.imagePlaceholder}>
+          <AppText variant="caption" tone="muted">
+            {copy.components.mealPhotoPlaceholder}
+          </AppText>
+        </View>
       </Card>
       <View style={styles.pills}>
         <NutritionPill
@@ -147,6 +159,12 @@ export default function MealDetailScreen() {
 
 const styles = StyleSheet.create({
   image: { minHeight: 180, alignItems: 'center', justifyContent: 'center' },
+  imagePlaceholder: {
+    backgroundColor: 'rgba(255,255,255,0.75)',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: spacing.sm,
+  },
   pills: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   row: {
     flexDirection: 'row',

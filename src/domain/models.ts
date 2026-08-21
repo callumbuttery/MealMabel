@@ -1,4 +1,12 @@
 export type ISODate = string;
+export type AuthProvider = 'apple' | 'google' | 'email';
+
+export interface Account {
+  provider: AuthProvider;
+  identifier: string;
+  displayName: string;
+  createdAt: ISODate;
+}
 export type CurrencyCode = 'GBP';
 export type MealType = 'breakfast' | 'lunch' | 'dinner';
 export type RetailerId = 'tesco' | 'asda' | 'sainsburys';

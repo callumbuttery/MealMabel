@@ -46,8 +46,8 @@ The first milestone is a **polished mocked vertical slice**. Do not block on liv
 ## Repo snapshot
 
 - Path: this repository, React Native / Expo Router app.
-- Branch: `main`. Work after the Expo template includes SDK 54 alignment, domain/mocks, MealMabel UI, onboarding-to-shop, then Ask Mabel, Compare My Shop, persisted create-plan inputs, product substitutions, constraint-safe generation, per-person diet/allergens, editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, analytics wiring, and (on the current working tree) soft-goal recipe ranking in the mock planner.
-- Quality bar last known good: 51 Jest tests, `tsc --noEmit`, `expo lint && oxlint`, `oxfmt --check` (17 pre-existing unrelated files still fail format, unchanged from before this session).
+- Branch: `main`. Work after the Expo template includes SDK 54 alignment, domain/mocks, MealMabel UI, onboarding-to-shop, then Ask Mabel, Compare My Shop, persisted create-plan inputs, product substitutions, constraint-safe generation, per-person diet/allergens, editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, analytics wiring, soft-goal recipe ranking, working account/Privacy/Terms actions, a mocked sign-in screen, and (on the current working tree) the "MealMabel Redesign" visual pass — see below.
+- Quality bar last known good: 61 Jest tests, `tsc --noEmit`, `expo lint && oxlint`, `oxfmt --check` (15 pre-existing unrelated files still fail format; not this session's doing).
 - Formatting: **Oxfmt**, not Prettier. Config: `.oxfmtrc.json`.
 - Do not commit `.env`, secrets, `dist-smoke/`, `.expo`, `ios/`, `android/`.
 
@@ -68,7 +68,7 @@ src/
   app/           Expo Router screens
   app-state/     Persistence + plan generation + query wiring
   copy/          All user-facing copy
-  components/    Shared UI (MabelAvatar, buttons, sheets, cards, …)
+  components/    Shared UI, one component per file (MabelAvatar, buttons, sheets, cards, …), barrel-exported from index.ts
   theme/         Design tokens (colour, space, type, radius)
   domain/        Models, household nutrition, allergens, constraints, aggregation, basket maths
   services/      Interfaces + mock implementations
@@ -88,6 +88,7 @@ Rules:
 - Diet strictness lives in `src/domain/household.ts`: shared meals follow the **strictest** person diet. Create-plan cannot loosen it.
 - Persisted app state is versioned (`@meal-mabel/app-state/v1`): onboarding, profile, current plan, checked shopping item IDs, optional `productSelections` (legacy v1 loads as `{}`).
 - TanStack Query is used for shopping list + retailer comparison derived from the current plan. Product substitutions are part of the query key.
+- `src/components/` is one component per file (e.g. `mabel-avatar.tsx`, `button.tsx`), each with its own colocated `StyleSheet.create`; small cross-file bits live in `shared-styles.ts` (flex/fill/center/pressed/inline) and `icon-name.ts` (the `IconName` type). Everything is barrel-exported from `index.ts` via `export * from './file'` — screens always `import { X } from '@/components'`, never a direct file path. Most files are under ~100 lines; a few single-component files run longer where the component is inherently detailed (`mabel-avatar.tsx`, `meal-card.tsx`, `loading-mabel.tsx`) — don't re-merge things back into one file to "simplify".
 
 Mock planner behaviour (important): `MockMealPlanningService.generatePlan` validates the request, slices `SEEDED_WEEKLY_PLAN` by duration and meal types, scales servings to household size, then **replaces any seeded meal that fails hard constraints** with another safe recipe of that meal type. If a requested meal type has no safe recipe, it throws `NoSafePlanError`. The generating screen shows refusal UX and a “change your choices” path. Swap and Ask Mabel also keep diet/allergen/dislike constraints.
 
@@ -123,6 +124,9 @@ Polished mocked journey, runnable in Expo Go:
 15. **Pack-aware shopping list**: list rows show “Buy 2 × 500g packs” from the recommended retailer’s basket line when a pack match exists, falling back to “Needed: Xg” otherwise.
 16. **Analytics wired** for `plan_generated`, `meal_swapped`, `plan_modified`, and `retailer_compared` (Shop tab compare switch + Compare My Shop) via a shared `analytics` singleton in `src/analytics/analytics.ts`. Still console-only (`AnalyticsLogger`), not sent anywhere.
 17. **Soft-goal recipe ranking** (`src/domain/plan-optimizer.ts`): when a household sets `nutritionGoals` or `cookingEffort: 'easy'`, the planner now picks the best-scoring safe recipe for each meal slot (cheaper, higher protein, higher fibre, more veg/fruit portions, or quicker, depending on the goal) instead of always keeping the seeded recipe. No goals + non-`easy` effort still leaves the curated week untouched.
+18. **Account actions that do something** (Profile → Account): Privacy and Terms rows under About open real screens (`src/app/privacy.tsx`, `src/app/terms.tsx`) with static, honest placeholder content instead of doing nothing. “Delete account” still shows a confirmation `Alert` and fully clears local state (household, plan, shopping list) — same effect as “Reset demo”, framed as a real account action.
+19. **Mocked sign-in** — split into `src/app/login.tsx` and `src/app/register.tsx` (previously one `sign-in.tsx`, now deleted), cross-linked to each other, reached from Welcome’s “I already have an account” or Profile’s “Sign in” row. “Continue/Sign up with Apple” / “…with Google” / email(+password, decorative)/(+name on register). No OAuth, no Apple entitlement, no backend — `MockAuthService` (`src/services/mock-services.ts`) fabricates an `Account` (`src/domain/models.ts`, `signIn(provider, email?, name?)`) after a short simulated delay and the provider persists it as `PersistedAppState.account`. Screen copy says outright that sign-in is simulated. Profile shows “Signed in as {name} via {provider}” when `state.account` is set, with a non-destructive “Sign out” (clears just the account, keeps local data — distinct from “Delete account”). This is intentionally not real auth; see “Next integrations” for what real auth requires (EAS dev build for Apple Sign-In, a Google OAuth client, a backend to verify tokens).
+20. **"MealMabel Redesign" visual pass** (source: a Claude Design mockup, project `2076921e-752b-476b-8d26-eb7c8db8714e`, `MealMabel Redesign.dc.html`, 13 screen frames). The mockup's colour palette and fonts already matched `src/theme` exactly, so this was a targeted set of component deltas, not a reskin: `MabelAvatar` redraw (no more ear blobs, eyes moved out from inside the white band to below it, new optional `sticker` prop — thick cocoa border + hard offset shadow + blush cheeks — used only for the Welcome hero avatar; everything else keeps the existing soft-shadow look); new `StickerButton` component (thick border + flat hard-edged offset shadow, built from two stacked views since RN has no zero-blur box-shadow) used only on Login/Register's Google/Apple/primary buttons; `MealCard` and the meal-detail placeholder now tint by meal type (`colors.peach` breakfast, `colors.sageSoft` lunch/dinner) with a "Meal photo" caption instead of a centred `MabelAvatar`; Welcome screen rebuilt full-bleed coral with blobs and the sticker avatar. Household/Preferences content was deliberately **not** simplified to match the mockup's stripped-down frame — per-person diet/allergens stay, since the mockup there was read as style reference, not a literal spec (see “Hard constraints” — do not silently drop tested functionality). Un-mocked screens (`edit-household`, `edit-preferences`, `ask-mabel`, `retailer/[id]`, `compare-shop`) were left untouched since they inherit the component deltas automatically.
 
 Also in place:
 
@@ -159,8 +163,8 @@ Ordered as the next useful work, not “everything ever”.
 
 ### In the original MVP spec, not finished
 
-- **Profile after onboarding**: people, diet, goals, restrictions, dislikes and preferred supermarkets are all editable now. Still missing: favourite foods, account placeholders (email/sign out/delete) that do anything, Privacy/Terms screens.
-- **Welcome “I already have an account”** is not a real account path (auth is explicitly later).
+- **Profile after onboarding**: people, diet, goals, restrictions, dislikes and preferred supermarkets are all editable; Sign out/Delete account/Privacy/Terms all do something real now. Still missing: favourite foods, a real (non-placeholder) email/account identity once auth exists.
+- **Welcome “I already have an account”** now opens the mocked `src/app/login.tsx` (cross-linked to `src/app/register.tsx`), but it is still not a real account path — no OAuth, no backend session. Real auth is explicitly later; see “Next integrations”.
 - **Error UX from the spec** is mostly there. Generation retry, allergy/diet-safe refusal, and budget-impossible (“best I could do £X”) all exist. Reduced-motion on generating is still incomplete.
 - **Analytics events** are tracked for `plan_generated`, `meal_swapped`, `plan_modified`, `retailer_compared`. `onboarding_completed` and `shopping_item_checked` are defined in the union but not yet tracked.
 - **Soft optimisation in generation**: `nutritionGoals` and `cookingEffort: 'easy'` now steer recipe choice per meal slot (see `plan-optimizer.ts` above). `maximumWeeklyBudget` and `cookingTimeLimitMinutes` still aren't planner inputs — there's no per-recipe budget allocation, and `cookingTimeLimitMinutes` is only enforced via `validateRecipeConstraints`/`COOKING_TIME`, not fed into ranking. Hard constraints (diet, allergens, dislikes, meal types) **are** enforced.
@@ -174,7 +178,7 @@ Reserved future: receipt → reconstruct household shop → “you spent £X at 
 ### Next integrations (after the mocked slice is solid)
 
 1. MealMabel backend; then swap mock services for API clients without rewriting screens.
-2. Supabase for auth, PostgreSQL, saved plans, shopping history (keep `AppStateRepository` as the boundary).
+2. Real auth to replace `MockAuthService`/`src/app/login.tsx`/`src/app/register.tsx`: Supabase (or equivalent) for session storage, PostgreSQL, saved plans, shopping history (keep `AppStateRepository` as the boundary). Apple Sign-In needs `expo-apple-authentication` and an EAS development build — Expo Go can't run it. Google needs a real OAuth client ID and redirect URI. Both need a backend to verify the token and mint a session; `AuthService`/`Account` in `src/domain/models.ts` are already shaped for a real implementation to drop in behind.
 3. Structured product allergen data — never trust an LLM as the only allergy check. Recipes already carry `allergens`; catalogue lines do not.
 4. Real pack-aware catalogue and planner that uses household nutrition + budget as inputs, not only the seeded week plus constraint filters.
 5. Final Mabel mascot artwork replacing `MabelAvatar`.
@@ -203,11 +207,13 @@ Mabel should appear on onboarding, generating, insights, empty states, conversat
 
 ## Suggested next milestone
 
-The previous milestone (editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, core analytics events, soft-goal recipe ranking) is done. If continuing from this file with no further instruction, implement:
+The previous milestone (editable profile preferences, budget-impossible generating UX, pack-aware shopping list lines, core analytics events, soft-goal recipe ranking, working account/Privacy/Terms actions, mocked sign-in split into Login/Register, and the "MealMabel Redesign" visual pass) is done. If continuing from this file with no further instruction, implement:
 
-1. Account placeholders that do something real: show the demo email, a working “Sign out” and “Delete account” (both local-only, since auth doesn't exist yet — reuse the reset flow with distinct, honest copy) and simple Privacy/Terms screens (static content is fine).
-2. Track the remaining high-value analytics events already in the union: `onboarding_completed` (finish of preferences screen) and `shopping_item_checked` (Shop tab checkbox toggle).
-3. Reduced-motion support on the generating screen (respect `useReducedMotion` / `AccessibilityInfo.isReduceMotionEnabled`, skip the rotating Mabel copy animation).
-4. Extend `plan-optimizer.ts` to factor in `maximumWeeklyBudget` (e.g. weight `estimateRecipeCostPerServing` more heavily, or hard-cap candidates once a running weekly total would exceed budget) and `cookingTimeLimitMinutes` as a soft ranking input alongside the existing `cookingEffort: 'easy'` signal.
+1. Track the remaining high-value analytics events already in the union: `onboarding_completed` (finish of preferences screen) and `shopping_item_checked` (Shop tab checkbox toggle).
+2. Reduced-motion support on the generating screen (respect `useReducedMotion` / `AccessibilityInfo.isReduceMotionEnabled`, skip the rotating Mabel copy animation).
+3. Extend `plan-optimizer.ts` to factor in `maximumWeeklyBudget` (e.g. weight `estimateRecipeCostPerServing` more heavily, or hard-cap candidates once a running weekly total would exceed budget) and `cookingTimeLimitMinutes` as a soft ranking input alongside the existing `cookingEffort: 'easy'` signal.
+4. Favourite foods in Profile/edit-preferences (a positive counterpart to dislikes) — new `UserPreferences` field, editable alongside dislikes, not yet used by the planner.
+
+Do not wire real Apple/Google OAuth or a backend session without the user explicitly asking — it requires leaving Expo Go for an EAS development build, real credentials the user owns, and a backend architecture decision, all out of scope for the mocked-slice phase.
 
 Keep mocks. Do not add live APIs, Supabase, or a marketing site unless explicitly asked.

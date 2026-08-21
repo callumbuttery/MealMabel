@@ -39,6 +39,10 @@ function Navigation() {
         <Stack.Screen name="edit-preferences" />
         <Stack.Screen name="ask-mabel" />
         <Stack.Screen name="compare-shop" />
+        <Stack.Screen name="login" />
+        <Stack.Screen name="register" />
+        <Stack.Screen name="privacy" />
+        <Stack.Screen name="terms" />
         <Stack.Screen name="meal/[id]" />
         <Stack.Screen name="retailer/[id]" />
       </Stack>
