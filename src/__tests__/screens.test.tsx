@@ -393,7 +393,7 @@ test('profile offers to sign in when no account is set', async () => {
   });
 });
 
-test('profile sign out clears the account but keeps local data', async () => {
+test('profile sign out clears the account, keeps local data and returns to Welcome', async () => {
   const signOut = jest.fn(async () => undefined);
   mockUseApp.mockReturnValue({
     ...mockUseApp(),
@@ -410,9 +410,10 @@ test('profile sign out clears the account but keeps local data', async () => {
     },
     signOut,
   });
+  let confirmed: Promise<void> | undefined;
   const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => {
     const confirm = buttons?.find((button) => button.text === copy.profile.signOut);
-    void confirm?.onPress?.();
+    confirmed = confirm?.onPress?.() as Promise<void> | undefined;
   });
 
   const view = await render(<ProfileScreen />);
@@ -420,6 +421,7 @@ test('profile sign out clears the account but keeps local data', async () => {
     view.getByText(copy.profile.signedInAs('Demo', copy.profile.providerLabel.google)),
   ).toBeTruthy();
   await fireEvent.press(view.getByRole('button', { name: copy.profile.signOut }));
+  await confirmed;
 
   expect(alertSpy).toHaveBeenCalledWith(
     copy.profile.signOutConfirmTitle,
@@ -427,7 +429,7 @@ test('profile sign out clears the account but keeps local data', async () => {
     expect.any(Array),
   );
   expect(signOut).toHaveBeenCalled();
-  expect(jest.mocked(router.replace)).not.toHaveBeenCalledWith('/');
+  expect(jest.mocked(router.replace)).toHaveBeenCalledWith('/(onboarding)');
 
   alertSpy.mockRestore();
 });

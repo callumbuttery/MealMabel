@@ -30,7 +30,13 @@ export default function ProfileScreen() {
   const confirmSignOut = () => {
     Alert.alert(copy.profile.signOutConfirmTitle, copy.profile.signOutConfirmBody, [
       { text: copy.common.cancel, style: 'cancel' },
-      { text: copy.profile.signOut, onPress: () => void signOut() },
+      {
+        text: copy.profile.signOut,
+        onPress: async () => {
+          await signOut();
+          router.replace('/(onboarding)');
+        },
+      },
     ]);
   };
 
